@@ -60,6 +60,37 @@ export function getSource(id: string): CorpusSource | undefined {
   return BY_ID.get(id);
 }
 
+export interface Citation {
+  sourceId: string;
+  title: string;
+  issuer: string;
+  section: string;
+  excerpt: string;
+  effectiveDate: string;
+  retrievedDate: string;
+  url: string;
+}
+
+/** Build UI citations for a set of source ids (unknown ids are skipped). */
+export function getCitations(sourceIds: string[]): Citation[] {
+  const out: Citation[] = [];
+  for (const id of sourceIds) {
+    const s = BY_ID.get(id);
+    if (!s) continue;
+    out.push({
+      sourceId: s.sourceId,
+      title: s.officialTitle,
+      issuer: s.issuingAuthority,
+      section: s.legalSection,
+      excerpt: s.excerpt,
+      effectiveDate: s.effectiveDate,
+      retrievedDate: s.retrievedDate,
+      url: s.url,
+    });
+  }
+  return out;
+}
+
 export interface SourceCheck {
   ok: boolean;
   missing: string[];
