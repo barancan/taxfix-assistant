@@ -1,0 +1,51 @@
+{
+  "name": "Portugal B2B — intra-EU reverse charge",
+  "description": "German freelancer invoices a Portuguese business with a format-valid VAT ID (mocked Demo verification); no German VAT, reverse charge, ZM hint.",
+  "input": {
+    "taxYear": 2026,
+    "profile": {
+      "establishmentCountry": "DE",
+      "taxResidence": "DE",
+      "kleinunternehmer": false,
+      "vatRegistered": true,
+      "taxNumberPresent": true,
+      "vatIdPresent": true
+    },
+    "customer": {
+      "name": "Exemplo Unipessoal Lda",
+      "countryCode": "PT",
+      "region": "EU",
+      "type": "business",
+      "vatId": "PT123456789"
+    },
+    "evidence": {
+      "vatIdFormatValid": true,
+      "vatIdCheck": "demo_vies",
+      "businessStatusConfirmedByUser": true,
+      "source": "extracted"
+    },
+    "service": {
+      "category": "software_development",
+      "normalizedDescription": "Custom web application development",
+      "isGoods": false,
+      "supported": true
+    },
+    "transaction": {
+      "invoiceDate": "2026-07-21",
+      "currency": "EUR",
+      "intermediaryInvolved": false,
+      "specialEstablishment": false,
+      "exceptionFlags": []
+    }
+  },
+  "expected": {
+    "status": "approved",
+    "decisionCode": "EU_RC_B2B",
+    "vatTreatment": "reverse_charge",
+    "showGermanVat": false,
+    "germanVatRate": null,
+    "invoiceGenerationAllowed": true,
+    "reportingHintsNonEmpty": true,
+    "expectedSourceIds": ["de-ustg-3a", "de-ustg-13b", "de-ustg-14a", "de-ustg-18a", "eu-vies", "de-ustg-14"]
+  }
+}

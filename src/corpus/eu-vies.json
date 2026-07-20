@@ -1,0 +1,16 @@
+{
+  "sourceId": "eu-vies",
+  "jurisdiction": "EU",
+  "officialTitle": "VIES — VAT Information Exchange System",
+  "issuingAuthority": "European Commission — Taxation and Customs Union",
+  "legalSection": "VAT number validation service",
+  "topic": "vat_id_validation",
+  "excerpt": "VIES lets you check whether a VAT identification number issued by an EU Member State is valid. In this prototype live VIES is NOT called for arbitrary inputs — only a syntactic format check is performed; the seeded Portugal scenario uses a clearly labelled mocked 'Demo verification'.",
+  "url": "https://ec.europa.eu/taxation_customs/vies/",
+  "effectiveDate": "1993-01-01",
+  "retrievedDate": "2026-07-21",
+  "supersededDate": null,
+  "supportedRuleIds": ["EU_RC_B2B"],
+  "language": "en",
+  "verificationStatus": "verified"
+}

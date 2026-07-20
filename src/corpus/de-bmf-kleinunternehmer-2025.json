@@ -1,0 +1,16 @@
+{
+  "sourceId": "de-bmf-kleinunternehmer-2025",
+  "jurisdiction": "DE",
+  "officialTitle": "BMF-Schreiben: Neuregelung der Kleinunternehmer-Sonderregelung (§ 19, § 19a UStG)",
+  "issuingAuthority": "Bundesministerium der Finanzen (BMF)",
+  "legalSection": "Abschnitt zur Rechnungsangabe der Steuerbefreiung",
+  "topic": "small_business_invoice_note",
+  "excerpt": "Seit dem 01.01.2025 sind die Umsätze der Kleinunternehmer steuerbefreit. In seinen Rechnungen muss der Kleinunternehmer auf die für seine Lieferung oder sonstige Leistung geltende Steuerbefreiung hinweisen. Eine bestimmte Formulierung ist nicht vorgeschrieben; ein Hinweis in umgangssprachlicher Form genügt.",
+  "url": "https://www.bundesfinanzministerium.de/Content/DE/Downloads/BMF_Schreiben/Steuerarten/Umsatzsteuer/Umsatzsteuer-Anwendungserlass/2025-03-18-sonderregelung-kleinunternehmer.pdf",
+  "effectiveDate": "2025-01-01",
+  "retrievedDate": "2026-07-21",
+  "supersededDate": null,
+  "supportedRuleIds": ["DE_KU_19UStG"],
+  "language": "de",
+  "verificationStatus": "verified"
+}

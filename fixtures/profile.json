@@ -1,0 +1,43 @@
+{
+  "id": "demo-user",
+  "legalName": "Alex Marét",
+  "businessName": "Marét Digital Studio",
+  "address": {
+    "line1": "Skalitzer Straße 68",
+    "postalCode": "10997",
+    "city": "Berlin",
+    "country": "DE"
+  },
+  "taxNumber": "30/123/45678",
+  "vatId": "DE325554321",
+  "taxResidence": "DE",
+  "establishmentCountry": "DE",
+  "vatRegistered": true,
+  "kleinunternehmer": false,
+  "vatReturnStatus": "quarterly",
+  "businessActivity": "Freelance software & product consulting",
+  "invoiceLanguage": "en",
+  "bank": {
+    "accountHolder": "Alex Marét",
+    "iban": "DE89 3704 0044 0532 0130 00",
+    "bic": "COBADEFFXXX",
+    "bankName": "Demo Bank"
+  },
+  "defaultPaymentTermsDays": 14,
+  "invoiceNumberPrefix": "TFX-DEMO",
+  "preferredCurrency": "EUR",
+  "contact": {
+    "email": "alex@maret-demo.example",
+    "phone": "+49 30 0000000"
+  },
+  "notes": {
+    "providesServicesNotGoods": true,
+    "primarilyB2B": true,
+    "hasEuClients": true,
+    "hasUsClients": true,
+    "commonServiceCategories": ["software_development", "consulting", "design"],
+    "knownExclusions": ["no goods", "no real-estate services", "no event admission"],
+    "freeText": "Prefers English invoices. Solo freelancer, standard professional services only."
+  },
+  "_synthetic": true
+}

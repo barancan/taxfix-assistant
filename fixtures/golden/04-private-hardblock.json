@@ -1,0 +1,48 @@
+{
+  "name": "Private customer presented as a company — hard block",
+  "description": "Initial input looked like a company, but confirmed facts show a private individual. Must hard-block: no invoice, no number, review case.",
+  "input": {
+    "taxYear": 2026,
+    "profile": {
+      "establishmentCountry": "DE",
+      "taxResidence": "DE",
+      "kleinunternehmer": false,
+      "vatRegistered": true,
+      "taxNumberPresent": true,
+      "vatIdPresent": true
+    },
+    "customer": {
+      "name": "John Private",
+      "countryCode": "DE",
+      "region": "DE",
+      "type": "private"
+    },
+    "evidence": {
+      "vatIdCheck": "none",
+      "businessStatusConfirmedByUser": false,
+      "source": "extracted"
+    },
+    "service": {
+      "category": "consulting",
+      "normalizedDescription": "Personal coaching sessions",
+      "isGoods": false,
+      "supported": true
+    },
+    "transaction": {
+      "invoiceDate": "2026-07-21",
+      "currency": "EUR",
+      "intermediaryInvolved": false,
+      "specialEstablishment": false,
+      "exceptionFlags": []
+    }
+  },
+  "expected": {
+    "status": "refused",
+    "decisionCode": "BLOCK_PRIVATE",
+    "vatTreatment": "blocked",
+    "showGermanVat": false,
+    "germanVatRate": null,
+    "invoiceGenerationAllowed": false,
+    "expectedSourceIds": ["de-ustg-3a"]
+  }
+}

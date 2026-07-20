@@ -1,0 +1,16 @@
+{
+  "sourceId": "de-ustg-13b",
+  "jurisdiction": "DE",
+  "officialTitle": "Umsatzsteuergesetz (UStG) § 13b — Leistungsempfänger als Steuerschuldner",
+  "issuingAuthority": "Bundesministerium der Justiz (gesetze-im-internet.de)",
+  "legalSection": "§ 13b (Steuerschuldnerschaft des Leistungsempfängers)",
+  "topic": "reverse_charge",
+  "excerpt": "Für bestimmte sonstige Leistungen schuldet der Leistungsempfänger die Steuer (Reverse-Charge). Bei innergemeinschaftlichen B2B-Grundregelleistungen geht die Steuerschuld auf den im anderen Mitgliedstaat ansässigen Unternehmer über (vgl. Art. 196 MwStSystRL).",
+  "url": "https://www.gesetze-im-internet.de/ustg_1980/__13b.html",
+  "effectiveDate": "2010-01-01",
+  "retrievedDate": "2026-07-21",
+  "supersededDate": null,
+  "supportedRuleIds": ["EU_RC_B2B"],
+  "language": "de",
+  "verificationStatus": "verified"
+}

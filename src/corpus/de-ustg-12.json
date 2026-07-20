@@ -1,0 +1,16 @@
+{
+  "sourceId": "de-ustg-12",
+  "jurisdiction": "DE",
+  "officialTitle": "Umsatzsteuergesetz (UStG) § 12 — Steuersätze",
+  "issuingAuthority": "Bundesministerium der Justiz (gesetze-im-internet.de)",
+  "legalSection": "§ 12 Abs. 1 (Regelsteuersatz)",
+  "topic": "vat_rate_standard",
+  "excerpt": "Die Steuer beträgt für jeden steuerpflichtigen Umsatz 19 Prozent der Bemessungsgrundlage (§ 12 Abs. 1 UStG). Ermäßigte Sätze nach Abs. 2 sind hier nicht einschlägig.",
+  "url": "https://www.gesetze-im-internet.de/ustg_1980/__12.html",
+  "effectiveDate": "2007-01-01",
+  "retrievedDate": "2026-07-21",
+  "supersededDate": null,
+  "supportedRuleIds": ["DE_STD_19"],
+  "language": "de",
+  "verificationStatus": "verified"
+}
