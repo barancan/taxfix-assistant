@@ -1,0 +1,44 @@
+{
+  "name": "taxfix-assistant",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:golden": "vitest run tests/golden",
+    "check:corpus": "node scripts/check-corpus.mjs",
+    "audit:package-age": "node scripts/audit-package-age.mjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "0.111.0",
+    "@react-pdf/renderer": "4.5.1",
+    "@supabase/supabase-js": "2.110.2",
+    "decimal.js": "10.6.0",
+    "file-type": "22.0.1",
+    "next": "16.2.10",
+    "openai": "6.46.0",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "3.3.6",
+    "@tailwindcss/postcss": "4.3.2",
+    "@types/node": "20.19.43",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.2.10",
+    "tailwindcss": "4.3.2",
+    "typescript": "5.9.3",
+    "vitest": "4.1.10"
+  }
+}

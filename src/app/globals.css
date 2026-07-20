@@ -1,0 +1,56 @@
+@import "tailwindcss";
+
+/*
+ * Taxfix-inspired design tokens (original implementation; no proprietary assets).
+ * Mobile-first, white base, bright green primary, calm low-anxiety surfaces.
+ */
+@theme {
+  --color-tf-green: #17c964;
+  --color-tf-green-strong: #0f9d58;
+  --color-tf-green-dark: #0b5c37;
+  --color-tf-green-pale: #e8faf0;
+  --color-tf-yellow-pale: #fdf6e3;
+  --color-tf-ink: #0a0a0a;
+  --color-tf-gray: #6b7280;
+  --color-tf-gray-soft: #9ca3af;
+  --color-tf-divider: #ececf0;
+  --color-tf-surface: #ffffff;
+  --color-tf-surface-muted: #f7f8fa;
+  --color-tf-danger: #d92d20;
+  --color-tf-amber: #b54708;
+
+  --radius-tf: 1rem;
+  --radius-tf-lg: 1.5rem;
+}
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  background: var(--color-tf-surface-muted);
+  color: var(--color-tf-ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  /* iOS safe-area support */
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Visible focus for keyboard users */
+:focus-visible {
+  outline: 2px solid var(--color-tf-green-strong);
+  outline-offset: 2px;
+}
