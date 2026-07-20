@@ -1,0 +1,16 @@
+{
+  "sourceId": "de-ustg-18a",
+  "jurisdiction": "DE",
+  "officialTitle": "Umsatzsteuergesetz (UStG) § 18a — Zusammenfassende Meldung",
+  "issuingAuthority": "Bundesministerium der Justiz (gesetze-im-internet.de)",
+  "legalSection": "§ 18a (Zusammenfassende Meldung, ZM)",
+  "topic": "recapitulative_statement",
+  "excerpt": "Unternehmer haben für innergemeinschaftliche sonstige Leistungen, für die der in einem anderen Mitgliedstaat ansässige Leistungsempfänger die Steuer schuldet, eine Zusammenfassende Meldung (ZM) mit der USt-IdNr. des Empfängers und dem Betrag abzugeben.",
+  "url": "https://www.gesetze-im-internet.de/ustg_1980/__18a.html",
+  "effectiveDate": "2010-01-01",
+  "retrievedDate": "2026-07-21",
+  "supersededDate": null,
+  "supportedRuleIds": ["EU_RC_B2B"],
+  "language": "de",
+  "verificationStatus": "verified"
+}

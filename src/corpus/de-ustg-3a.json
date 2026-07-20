@@ -1,0 +1,16 @@
+{
+  "sourceId": "de-ustg-3a",
+  "jurisdiction": "DE",
+  "officialTitle": "Umsatzsteuergesetz (UStG) § 3a — Ort der sonstigen Leistung",
+  "issuingAuthority": "Bundesministerium der Justiz (gesetze-im-internet.de)",
+  "legalSection": "§ 3a Abs. 2 (B2B-Grundregel); Abs. 3 (Ausnahmen)",
+  "topic": "place_of_supply_services",
+  "excerpt": "Eine sonstige Leistung, die an einen Unternehmer für dessen Unternehmen ausgeführt wird, wird vorbehaltlich der Absätze 3 bis 8 an dem Ort ausgeführt, von dem aus der Empfänger sein Unternehmen betreibt. Absatz 3 nennt Ausnahmen (u. a. Grundstücksleistungen, Eintrittsberechtigungen zu Veranstaltungen).",
+  "url": "https://www.gesetze-im-internet.de/ustg_1980/__3a.html",
+  "effectiveDate": "2010-01-01",
+  "retrievedDate": "2026-07-21",
+  "supersededDate": null,
+  "supportedRuleIds": ["DE_STD_19", "EU_RC_B2B", "NONEU_OOS", "BLOCK_SCOPE", "BLOCK_PRIVATE"],
+  "language": "de",
+  "verificationStatus": "verified"
+}

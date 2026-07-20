@@ -1,0 +1,48 @@
+{
+  "name": "German B2B — standard VAT",
+  "description": "German freelancer (not Kleinunternehmer) invoices a German business for an ordinary professional service.",
+  "input": {
+    "taxYear": 2026,
+    "profile": {
+      "establishmentCountry": "DE",
+      "taxResidence": "DE",
+      "kleinunternehmer": false,
+      "vatRegistered": true,
+      "taxNumberPresent": true,
+      "vatIdPresent": true
+    },
+    "customer": {
+      "name": "Beispiel GmbH",
+      "countryCode": "DE",
+      "region": "DE",
+      "type": "business"
+    },
+    "evidence": {
+      "vatIdCheck": "none",
+      "businessStatusConfirmedByUser": true,
+      "source": "manual"
+    },
+    "service": {
+      "category": "consulting",
+      "normalizedDescription": "Product strategy consulting",
+      "isGoods": false,
+      "supported": true
+    },
+    "transaction": {
+      "invoiceDate": "2026-07-21",
+      "currency": "EUR",
+      "intermediaryInvolved": false,
+      "specialEstablishment": false,
+      "exceptionFlags": []
+    }
+  },
+  "expected": {
+    "status": "approved",
+    "decisionCode": "DE_STD_19",
+    "vatTreatment": "standard",
+    "showGermanVat": true,
+    "germanVatRate": 19,
+    "invoiceGenerationAllowed": true,
+    "expectedSourceIds": ["de-ustg-3a", "de-ustg-12", "de-ustg-14"]
+  }
+}

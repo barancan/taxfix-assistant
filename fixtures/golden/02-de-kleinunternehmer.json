@@ -1,0 +1,48 @@
+{
+  "name": "German B2B — Kleinunternehmer (§19)",
+  "description": "German freelancer with active small-business treatment invoices a German business; no VAT, exemption note.",
+  "input": {
+    "taxYear": 2026,
+    "profile": {
+      "establishmentCountry": "DE",
+      "taxResidence": "DE",
+      "kleinunternehmer": true,
+      "vatRegistered": false,
+      "taxNumberPresent": true,
+      "vatIdPresent": false
+    },
+    "customer": {
+      "name": "Muster AG",
+      "countryCode": "DE",
+      "region": "DE",
+      "type": "business"
+    },
+    "evidence": {
+      "vatIdCheck": "none",
+      "businessStatusConfirmedByUser": true,
+      "source": "manual"
+    },
+    "service": {
+      "category": "design",
+      "normalizedDescription": "Brand identity design",
+      "isGoods": false,
+      "supported": true
+    },
+    "transaction": {
+      "invoiceDate": "2026-07-21",
+      "currency": "EUR",
+      "intermediaryInvolved": false,
+      "specialEstablishment": false,
+      "exceptionFlags": []
+    }
+  },
+  "expected": {
+    "status": "approved",
+    "decisionCode": "DE_KU_19UStG",
+    "vatTreatment": "exempt_kleinunternehmer",
+    "showGermanVat": false,
+    "germanVatRate": null,
+    "invoiceGenerationAllowed": true,
+    "expectedSourceIds": ["de-ustg-19", "de-bmf-kleinunternehmer-2025", "de-ustg-14"]
+  }
+}

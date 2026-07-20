@@ -1,0 +1,16 @@
+{
+  "sourceId": "de-ustg-14a",
+  "jurisdiction": "DE",
+  "officialTitle": "Umsatzsteuergesetz (UStG) § 14a — Zusätzliche Pflichten bei bestimmten Umsätzen",
+  "issuingAuthority": "Bundesministerium der Justiz (gesetze-im-internet.de)",
+  "legalSection": "§ 14a Abs. 1 und Abs. 5 (Reverse-Charge-Angabe, USt-IdNrn.)",
+  "topic": "invoice_reverse_charge_wording",
+  "excerpt": "Bei einer im übrigen Gemeinschaftsgebiet steuerpflichtigen sonstigen Leistung, für die der Leistungsempfänger die Steuer schuldet, ist die USt-IdNr. des leistenden Unternehmers und des Leistungsempfängers anzugeben und die Rechnung muss die Angabe \"Steuerschuldnerschaft des Leistungsempfängers\" (reverse charge) enthalten.",
+  "url": "https://www.gesetze-im-internet.de/ustg_1980/__14a.html",
+  "effectiveDate": "2013-06-30",
+  "retrievedDate": "2026-07-21",
+  "supersededDate": null,
+  "supportedRuleIds": ["EU_RC_B2B"],
+  "language": "de",
+  "verificationStatus": "verified"
+}

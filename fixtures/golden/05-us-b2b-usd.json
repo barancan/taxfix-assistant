@@ -1,0 +1,48 @@
+{
+  "name": "US B2B — USD 12,000, not taxable in Germany",
+  "description": "German freelancer invoices a US business for an ordinary professional service in USD. German VAT not applicable; ECB EUR accounting metadata.",
+  "input": {
+    "taxYear": 2026,
+    "profile": {
+      "establishmentCountry": "DE",
+      "taxResidence": "DE",
+      "kleinunternehmer": false,
+      "vatRegistered": true,
+      "taxNumberPresent": true,
+      "vatIdPresent": true
+    },
+    "customer": {
+      "name": "Northwind US Inc.",
+      "countryCode": "US",
+      "region": "NON_EU",
+      "type": "business"
+    },
+    "evidence": {
+      "vatIdCheck": "none",
+      "businessStatusConfirmedByUser": true,
+      "source": "extracted"
+    },
+    "service": {
+      "category": "consulting",
+      "normalizedDescription": "Product consulting engagement",
+      "isGoods": false,
+      "supported": true
+    },
+    "transaction": {
+      "invoiceDate": "2026-07-20",
+      "currency": "USD",
+      "intermediaryInvolved": false,
+      "specialEstablishment": false,
+      "exceptionFlags": []
+    }
+  },
+  "expected": {
+    "status": "approved",
+    "decisionCode": "NONEU_OOS",
+    "vatTreatment": "not_taxable_de",
+    "showGermanVat": false,
+    "germanVatRate": null,
+    "invoiceGenerationAllowed": true,
+    "expectedSourceIds": ["de-ustg-3a", "de-ustg-14", "ecb-exr"]
+  }
+}

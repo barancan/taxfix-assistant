@@ -1,0 +1,16 @@
+{
+  "sourceId": "de-ustg-19",
+  "jurisdiction": "DE",
+  "officialTitle": "Umsatzsteuergesetz (UStG) § 19 — Kleinunternehmer",
+  "issuingAuthority": "Bundesministerium der Justiz (gesetze-im-internet.de)",
+  "legalSection": "§ 19 (Steuerbefreiung für Kleinunternehmer, Fassung ab 01.01.2025)",
+  "topic": "small_business_exemption",
+  "excerpt": "Von im Inland ansässigen Kleinunternehmern bewirkte Umsätze sind steuerfrei, wenn der Gesamtumsatz im vorangegangenen Kalenderjahr 25 000 Euro nicht überschritten hat und im laufenden Kalenderjahr 100 000 Euro nicht überschreitet. Ein Vorsteuerabzug ist ausgeschlossen.",
+  "url": "https://www.gesetze-im-internet.de/ustg_1980/__19.html",
+  "effectiveDate": "2025-01-01",
+  "retrievedDate": "2026-07-21",
+  "supersededDate": null,
+  "supportedRuleIds": ["DE_KU_19UStG"],
+  "language": "de",
+  "verificationStatus": "verified"
+}
