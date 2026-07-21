@@ -210,44 +210,53 @@ export default function AssistantPage() {
         <div ref={endRef} />
       </div>
 
-      <div className="sticky bottom-[76px] z-10 -mx-5 bg-tf-surface">
-        {showExamples ? (
-          <div className="px-5 pb-2 pt-1">
-            <RecommendedPrompts examples={SKILLS.flatMap((s) => s.examples)} onPick={onExample} />
+      {/* Sticky bar only when there's a real action; when a confirm card is
+          active it carries its own button, so no redundant sticky hint. */}
+      {(() => {
+        const footerAction =
+          (mode === "skill" && skill.footer) || showTerminal || (Boolean(inputSpec) && !byokOpen);
+        if (!showExamples && !footerAction) return null;
+        return (
+          <div className="sticky bottom-[76px] z-10 -mx-5 bg-tf-surface">
+            {showExamples ? (
+              <div className="px-5 pb-2 pt-1">
+                <RecommendedPrompts examples={SKILLS.flatMap((s) => s.examples)} onPick={onExample} />
+              </div>
+            ) : null}
+            {footerAction ? (
+              <div className="border-t border-tf-divider px-5 py-2.5">
+                {mode === "skill" && skill.footer ? (
+                  skill.footer
+                ) : showTerminal ? (
+                  <div className="flex flex-col gap-2">
+                    <button onClick={continueToChat} className="w-full rounded-full bg-tf-green-strong px-5 py-3 text-sm font-semibold text-white active:scale-[0.99]">
+                      Continue to chat
+                    </button>
+                    <button onClick={startOver} className="w-full rounded-full border border-tf-divider px-5 py-2.5 text-sm font-semibold text-tf-ink">
+                      Start a new invoice
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <ChatInput
+                      value={input}
+                      onChange={setInput}
+                      onSend={onSend}
+                      onAttach={skill.onAttach}
+                      placeholder={inputSpec!.placeholder}
+                      disabled={busy}
+                      showAttach={inputSpec!.showAttach}
+                    />
+                    {mode === "chat" ? (
+                      <button onClick={startOver} className="mt-2 text-xs font-semibold text-tf-green-dark">＋ New invoice</button>
+                    ) : null}
+                  </>
+                )}
+              </div>
+            ) : null}
           </div>
-        ) : null}
-        <div className="border-t border-tf-divider px-5 py-2.5">
-          {mode === "skill" && skill.footer ? (
-            skill.footer
-          ) : showTerminal ? (
-            <div className="flex flex-col gap-2">
-              <button onClick={continueToChat} className="w-full rounded-full bg-tf-green-strong px-5 py-3 text-sm font-semibold text-white active:scale-[0.99]">
-                Continue to chat
-              </button>
-              <button onClick={startOver} className="w-full rounded-full border border-tf-divider px-5 py-2.5 text-sm font-semibold text-tf-ink">
-                Start a new invoice
-              </button>
-            </div>
-          ) : inputSpec && !byokOpen ? (
-            <>
-              <ChatInput
-                value={input}
-                onChange={setInput}
-                onSend={onSend}
-                onAttach={skill.onAttach}
-                placeholder={inputSpec.placeholder}
-                disabled={busy}
-                showAttach={inputSpec.showAttach}
-              />
-              {mode === "chat" ? (
-                <button onClick={startOver} className="mt-2 text-xs font-semibold text-tf-green-dark">＋ New invoice</button>
-              ) : null}
-            </>
-          ) : (
-            <p className="text-center text-xs text-tf-gray">Use the card above to continue.</p>
-          )}
-        </div>
-      </div>
+        );
+      })()}
     </div>
   );
 }
