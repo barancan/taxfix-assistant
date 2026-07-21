@@ -157,17 +157,17 @@ export function CollectedHeader({
 export function RecommendedPrompts({ onPick }: { onPick: (p: Preset) => void }) {
   return (
     <div>
-      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-tf-gray">Try an example</p>
-      <div className="flex flex-col gap-2">
+      <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-tf-gray">Try an example</p>
+      <div className="flex flex-wrap gap-1.5">
         {PRESETS.map((p) => (
           <button
             key={p.id}
             type="button"
             onClick={() => onPick(p)}
-            className="rounded-tf border border-tf-divider bg-tf-surface p-3 text-left text-sm active:scale-[0.99]"
+            title={p.sentence}
+            className="rounded-full border border-tf-divider bg-tf-surface px-3 py-1.5 text-xs font-medium text-tf-ink active:scale-95"
           >
-            <span className="font-medium text-tf-ink">“{p.sentence}”</span>
-            <span className="mt-0.5 block text-xs text-tf-gray">{p.label}</span>
+            {p.label}
           </button>
         ))}
       </div>

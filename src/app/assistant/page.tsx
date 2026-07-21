@@ -57,6 +57,9 @@ export default function AssistantPage() {
   ]);
   const [step, setStep] = useState<Step>("intent");
   const [c, setC] = useState<Collected>(emptyCollected());
+  // Header reflects only CONFIRMED data — prefilled drafts stay hidden until the
+  // user taps a confirm button.
+  const [confirmed, setConfirmed] = useState<Collected>(emptyCollected());
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [typing, setTyping] = useState(false);
@@ -159,11 +162,21 @@ export default function AssistantPage() {
   }
 
   function confirmCompany() {
+    setConfirmed((p) => ({
+      ...p,
+      customerName: c.customerName,
+      countryCode: c.countryCode,
+      vatId: c.vatId,
+      currency: c.currency,
+      serviceCategory: c.serviceCategory,
+      addressLines: c.addressLines,
+    }));
     say("Thanks. A couple of things I must confirm about this customer.");
     setStep("legal");
   }
 
   function confirmLegal() {
+    setConfirmed((p) => ({ ...p, customerType: c.customerType, businessConfirmed: c.businessConfirmed, demoVies: c.demoVies, vatId: c.vatId }));
     if (c.lines.length > 0) {
       say("Here are the line items I have — edit or confirm.");
       setStep("lineitems_confirm");
@@ -174,6 +187,7 @@ export default function AssistantPage() {
   }
 
   async function confirmLineItems() {
+    setConfirmed((p) => ({ ...p, lines: c.lines, currency: c.currency }));
     setStep("assessing");
     setTyping(true);
     say("Let me check the VAT treatment and prepare everything…");
@@ -260,7 +274,7 @@ export default function AssistantPage() {
   return (
     <div className="flex min-h-[calc(100dvh-9rem)] flex-col">
       <CollectedHeader
-        collected={c}
+        collected={confirmed}
         onEdit={(section) => setStep(section === "company" ? "company_confirm" : section === "legal" ? "legal" : "lineitems_confirm")}
       />
 
