@@ -301,21 +301,26 @@ export default function AssistantPage() {
           <ByokCard byok={byok} onChange={setByok} onRetry={retryByok} message={aiError} busy={busy} />
         ) : null}
 
-        {step === "intent" ? <RecommendedPrompts onPick={pickPreset} /> : null}
-
         <div ref={endRef} />
       </div>
 
-      <div className="sticky bottom-[76px] z-10 -mx-5 border-t border-tf-divider bg-tf-surface px-5 py-2.5">
-        {canGenerate ? (
-          <button onClick={generateInvoice} disabled={busy} className="w-full rounded-full bg-tf-green-strong px-5 py-3 text-sm font-semibold text-white disabled:opacity-50">
-            {busy ? "Generating…" : "Generate invoice"}
-          </button>
-        ) : showInput ? (
-          <ChatInput value={input} onChange={setInput} onSend={onSend} onAttach={onAttach} placeholder={placeholder} disabled={busy} showAttach={step === "company_ask"} />
-        ) : (
-          <p className="text-center text-xs text-tf-gray">Use the card above to continue.</p>
-        )}
+      <div className="sticky bottom-[76px] z-10 -mx-5 bg-tf-surface">
+        {step === "intent" && !byokOpen ? (
+          <div className="px-5 pb-2 pt-1">
+            <RecommendedPrompts onPick={pickPreset} />
+          </div>
+        ) : null}
+        <div className="border-t border-tf-divider px-5 py-2.5">
+          {canGenerate ? (
+            <button onClick={generateInvoice} disabled={busy} className="w-full rounded-full bg-tf-green-strong px-5 py-3 text-sm font-semibold text-white disabled:opacity-50">
+              {busy ? "Generating…" : "Generate invoice"}
+            </button>
+          ) : showInput ? (
+            <ChatInput value={input} onChange={setInput} onSend={onSend} onAttach={onAttach} placeholder={placeholder} disabled={busy} showAttach={step === "company_ask"} />
+          ) : (
+            <p className="text-center text-xs text-tf-gray">Use the card above to continue.</p>
+          )}
+        </div>
       </div>
     </div>
   );

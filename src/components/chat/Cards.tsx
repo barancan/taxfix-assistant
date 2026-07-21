@@ -145,11 +145,19 @@ export function BlockedCard({ decision, citations, reviewCaseId }: { decision: D
   return (
     <div className="flex flex-col gap-3">
       <DecisionCard decision={decision} citations={citations} />
-      <div className="rounded-tf-lg border border-red-200 bg-red-50 p-4 text-sm">
-        <p className="font-semibold text-tf-danger">I can&rsquo;t issue this invoice safely.</p>
-        <p className="mt-1 text-tf-ink">No number or PDF was created. A tax expert should review this case.</p>
+      <div className="rounded-tf-lg border border-tf-green/30 bg-tf-green-pale p-4 text-sm">
+        <p className="font-semibold text-tf-green-dark">Good news — a tax expert can take it from here 🤝</p>
+        <p className="mt-1 text-tf-ink">
+          This case is outside what I can safely automate, so I didn&rsquo;t create an invoice, number, or PDF.
+          A Taxfix tax expert can review it and get you sorted.
+        </p>
         {reviewCaseId ? (
-          <Link href="/review" className="mt-2 inline-block font-semibold text-tf-green-dark underline">Escalate to a tax expert →</Link>
+          <Link
+            href="/review"
+            className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-tf-green-strong px-5 py-2.5 text-sm font-semibold text-white shadow-sm active:scale-95"
+          >
+            Escalate to a tax expert →
+          </Link>
         ) : null}
       </div>
     </div>
