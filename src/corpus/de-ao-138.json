@@ -1,0 +1,18 @@
+{
+  "sourceId": "de-ao-138",
+  "jurisdiction": "DE",
+  "officialTitle": "Abgabenordnung (AO) § 138 — Anzeigepflichten (steuerliche Erfassung)",
+  "officialTitleEn": "Fiscal Code (AO) §138 — Notification duties (tax registration)",
+  "issuingAuthority": "Bundesministerium der Justiz (gesetze-im-internet.de)",
+  "legalSection": "§ 138 Abs. 1 (Anzeige der Erwerbstätigkeit)",
+  "topic": "freelancer_registration",
+  "excerpt": "Wer einen gewerblichen Betrieb oder eine Betriebstätte eröffnet, hat dies nach amtlich vorgeschriebenem Vordruck der Gemeinde mitzuteilen; wer eine freiberufliche (selbständige) Tätigkeit aufnimmt, hat dies dem zuständigen Finanzamt mitzuteilen. Die Mitteilung ist innerhalb eines Monats zu erstatten; die steuerlich relevanten Angaben werden über den „Fragebogen zur steuerlichen Erfassung“ erhoben.",
+  "excerptEn": "Anyone opening a commercial business or permanent establishment must notify the municipality using the official form; anyone starting a freelance (self-employed) activity must notify the competent tax office. The notification is due within one month; the tax-relevant details are collected via the „Fragebogen zur steuerlichen Erfassung“ (tax registration questionnaire).",
+  "url": "https://www.gesetze-im-internet.de/ao_1977/__138.html",
+  "effectiveDate": "2021-01-01",
+  "retrievedDate": "2026-07-21",
+  "supersededDate": null,
+  "supportedRuleIds": ["KB"],
+  "language": "de",
+  "verificationStatus": "verified"
+}

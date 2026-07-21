@@ -87,4 +87,32 @@ describe("AI provider adapters (mocked clients)", () => {
     expect(isModelAllowed("anthropic", "totally-made-up")).toBe(false);
     expect(modelSupportsFiles("openai", "gpt-5.4")).toBe(true);
   });
+
+  it("Anthropic: answer() parses a forced classify_and_answer tool result", async () => {
+    const payload = { kind: "question", answer: "Reverse charge shifts VAT to the recipient.", confidence: 0.82, relatedSourceIds: ["de-ustg-13b"] };
+    const client: AnthropicLike = {
+      messages: { create: async () => ({ content: [{ type: "tool_use", name: "classify_and_answer", input: payload }] }) },
+    };
+    const p = new AnthropicProvider("claude-sonnet-5", "sk-test", client);
+    const out = await p.answer("system", [{ role: "user", content: "What is reverse charge?" }]);
+    expect(out.ok).toBe(true);
+    if (out.ok) {
+      expect(out.data.kind).toBe("question");
+      expect(out.data.confidence).toBe(0.82);
+    }
+  });
+
+  it("OpenAI: answer() parses strict json_schema output; malformed → invalid_output", async () => {
+    const good: OpenAiLike = {
+      responses: { create: async () => ({ output_text: JSON.stringify({ kind: "invoice_request", answer: "", confidence: 0.9, relatedSourceIds: [] }) }) },
+    };
+    const ok = await new OpenAiProvider("gpt-5.4", "sk", good).answer("s", [{ role: "user", content: "invoice a US client" }]);
+    expect(ok.ok).toBe(true);
+    if (ok.ok) expect(ok.data.kind).toBe("invoice_request");
+
+    const bad: OpenAiLike = { responses: { create: async () => ({ output_text: "not json" }) } };
+    const err = await new OpenAiProvider("gpt-5.4", "sk", bad).answer("s", [{ role: "user", content: "x" }]);
+    expect(err.ok).toBe(false);
+    if (!err.ok) expect(err.kind).toBe("invalid_output");
+  });
 });

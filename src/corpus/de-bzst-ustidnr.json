@@ -1,0 +1,18 @@
+{
+  "sourceId": "de-bzst-ustidnr",
+  "jurisdiction": "DE",
+  "officialTitle": "BZSt — Vergabe und Erteilung der Umsatzsteuer-Identifikationsnummer (USt-IdNr.)",
+  "officialTitleEn": "BZSt — Issuance of the VAT identification number (USt-IdNr.)",
+  "issuingAuthority": "Bundeszentralamt für Steuern (BZSt)",
+  "legalSection": "USt-IdNr. — Vergabe und Erteilung",
+  "topic": "vat_id_issuance",
+  "excerpt": "Die USt-IdNr. ist eine eigenständige Nummer, die Unternehmen zusätzlich zur Steuernummer vom Bundeszentralamt für Steuern erteilt wird. Unternehmen, die am innergemeinschaftlichen Waren- und Dienstleistungsverkehr teilnehmen, benötigen sie. Sie wird erst erteilt, nachdem die umsatzsteuerliche Erfassung beim Finanzamt erfolgt und an das BZSt übermittelt wurde; die Mitteilung erfolgt ausschließlich postalisch.",
+  "excerptEn": "The USt-IdNr. is a separate number the Federal Central Tax Office (BZSt) issues to businesses in addition to their tax number. Businesses taking part in intra-Community trade in goods and services need it. It is issued only after VAT registration at the tax office has been completed and transmitted to the BZSt; notification is sent exclusively by post.",
+  "url": "https://www.bzst.de/DE/Unternehmen/Identifikationsnummern/Umsatzsteuer-Identifikationsnummer/Vergabe_USt_IdNr/vergabe_ust_idnr.html",
+  "effectiveDate": "1993-01-01",
+  "retrievedDate": "2026-07-21",
+  "supersededDate": null,
+  "supportedRuleIds": ["KB"],
+  "language": "de",
+  "verificationStatus": "verified"
+}

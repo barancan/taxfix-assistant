@@ -6,6 +6,7 @@ import { byokEnabled, createByokProvider, resolveServerProvider } from "@/ai";
 import { isModelAllowed, modelSupportsFiles } from "@/ai/models";
 import type { AiFile, ProviderName } from "@/ai/provider";
 import { makeError } from "@/ai/errors";
+import { agentModelQuery, agentModelResponse, agentObject, skillOf } from "@/server/agent-log";
 
 export const runtime = "nodejs";
 
@@ -90,6 +91,28 @@ export async function POST(req: Request) {
     return NextResponse.json({ ...makeError("insufficient_credits"), noServerKey: true }, { status: 200 });
   }
 
+  const skill = skillOf(req);
+  agentModelQuery(
+    skill,
+    "extract",
+    provider.name,
+    provider.model,
+    text || "(document only)",
+    files.map((f) => ({ mediaType: f.mediaType, bytes: Math.round((f.dataBase64.length * 3) / 4) })),
+  );
+  const started = Date.now();
   const outcome = await provider.extract({ text, profileSummary: profileSummary(sessionId), files });
+  if (outcome.ok) {
+    const d = outcome.data;
+    agentModelResponse(
+      skill,
+      "extract",
+      Date.now() - started,
+      `customer="${d.customerName ?? "?"}" (country=${d.customerCountryCode ?? "null"}${d.customerVatId ? `, VAT ${d.customerVatId}` : ""}), category=${d.suggestedCategory ?? "?"}, currency=${d.currency ?? "null"}, ${d.lineItems.length} line item(s)`,
+    );
+    agentObject(skill, "extract", "extracted object", d);
+  } else {
+    agentModelResponse(skill, "extract", Date.now() - started, `failed: ${outcome.kind}`);
+  }
   return NextResponse.json(outcome, { status: 200 });
 }

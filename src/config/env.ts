@@ -25,6 +25,22 @@ const EnvSchema = z.object({
     .optional()
     .transform((v) => v === "true"),
 
+  /**
+   * Display gate for general-question answers: below this self-assessed model
+   * confidence the answer is suppressed and the subject is raised to a human
+   * (review case). Only ever suppresses answers — never feeds tax decisions.
+   */
+  ANSWER_CONFIDENCE_THRESHOLD: z.coerce.number().min(0).max(1).default(0.65),
+
+  /**
+   * Minimum lexical-retrieval relevance [0..1] for a general question to be
+   * considered "grounded" in the knowledge base. Below it (or with no matching
+   * entry) the question is raised to a human instead of answered. Calibrated
+   * scale: a clearly relevant top match ≈ 0.7–1.0, a partial match ≈ 0.4–0.6,
+   * off-topic ≈ 0. Sensible range 0.25–0.45.
+   */
+  KNOWLEDGE_RELEVANCE_MIN: z.coerce.number().min(0).max(1).default(0.3),
+
   SUPABASE_URL: z.string().url().optional().or(z.literal("").transform(() => undefined)),
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
   SUPABASE_STORAGE_BUCKET: z.string().default("invoices"),

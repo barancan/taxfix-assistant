@@ -31,6 +31,13 @@
   by `src/proxy.ts`. The server stores only the id. No cross-session access.
 - PDFs are deterministic, escape user content, and live in a private bucket.
 
+## Agent trace (dev observability)
+- `AGENT_TRACE` prints human-readable skill/model activity to the server
+  terminal (queries and response summaries, truncated). It is **on in
+  development, off in production** unless explicitly enabled. It never logs API
+  keys, Authorization headers, BYOK credentials, or uploaded file bytes (files
+  appear as mime+size only).
+
 ## Error taxonomy & logging
 - Raw provider error bodies are normalized (`src/ai/errors.ts`) into safe kinds;
   raw bodies/keys/headers are never surfaced. Structured logging is kept minimal

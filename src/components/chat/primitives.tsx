@@ -1,8 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { PRESETS, type Preset } from "@/lib/presets";
-import { collectedSubtotal, type Collected } from "@/lib/facts";
+import type { SkillExample } from "@/skills/types";
 
 export function Bubble({ role, children }: { role: "assistant" | "user"; children: React.ReactNode }) {
   const isUser = role === "user";
@@ -119,52 +118,43 @@ function Chip({ label, onClick }: { label: string; onClick?: () => void }) {
   );
 }
 
-export function CollectedHeader({
-  collected,
-  onEdit,
-}: {
-  collected: Collected;
-  onEdit: (section: "company" | "legal" | "lineitems") => void;
-}) {
-  const hasCustomer = collected.customerName.length > 0;
-  const hasLines = collected.lines.length > 0;
-  if (!hasCustomer && !hasLines) return null;
+export interface HeaderChip {
+  label: string;
+  onClick?: () => void;
+}
 
-  const total = collectedSubtotal(collected);
-  const totalStr = new Intl.NumberFormat("en-US", { minimumFractionDigits: 2 }).format(total);
-
+/** Generic sticky "collected so far" header; each skill supplies its own chips. */
+export function CollectedHeader({ chips }: { chips: HeaderChip[] }) {
+  if (chips.length === 0) return null;
   return (
     <div className="border-b border-tf-divider bg-tf-surface-muted px-1 py-2">
       <p className="mb-1.5 px-1 text-[10px] font-semibold uppercase tracking-wide text-tf-gray">Collected so far</p>
       <div className="flex flex-wrap gap-1.5">
-        {hasCustomer ? (
-          <Chip
-            label={`👤 ${collected.customerName} · ${collected.countryCode}${collected.vatId ? " · " + collected.vatId : ""}`}
-            onClick={() => onEdit("company")}
-          />
-        ) : null}
-        {collected.customerType !== "unknown" ? (
-          <Chip label={`🏷 ${collected.customerType}`} onClick={() => onEdit("legal")} />
-        ) : null}
-        {hasLines ? (
-          <Chip label={`🧾 ${collected.lines.length} item(s) · ${totalStr} ${collected.currency}`} onClick={() => onEdit("lineitems")} />
-        ) : null}
+        {chips.map((c, i) => (
+          <Chip key={i} label={c.label} onClick={c.onClick} />
+        ))}
       </div>
     </div>
   );
 }
 
 /** Pill styling by expected outcome: green = success, yellow = escalation, red = denied. */
-const OUTCOME_PILL: Record<Preset["outcome"], string> = {
+const OUTCOME_PILL: Record<SkillExample["outcome"], string> = {
   success: "border-tf-green/40 bg-tf-green-pale text-tf-green-dark",
   escalate: "border-amber-300/70 bg-tf-yellow-pale text-tf-amber",
   blocked: "border-red-200 bg-red-50 text-tf-danger",
 };
 
-export function RecommendedPrompts({ onPick }: { onPick: (p: Preset) => void }) {
+export function RecommendedPrompts({
+  examples,
+  onPick,
+}: {
+  examples: SkillExample[];
+  onPick: (e: SkillExample) => void;
+}) {
   return (
     <div className="flex gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-      {PRESETS.map((p) => (
+      {examples.map((p) => (
         <button
           key={p.id}
           type="button"

@@ -15,6 +15,7 @@
     "test:watch": "vitest",
     "test:golden": "vitest run tests/golden",
     "check:corpus": "node scripts/check-corpus.mjs",
+    "check:knowledge": "node scripts/check-knowledge.mjs",
     "audit:package-age": "node scripts/audit-package-age.mjs"
   },
   "dependencies": {

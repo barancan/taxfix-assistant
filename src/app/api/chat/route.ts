@@ -1,11 +1,16 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { getEnv } from "@/config/env";
 import { getSessionId } from "@/server/session-server";
+import { getStorage } from "@/server/storage";
 import { byokEnabled, createByokProvider, resolveServerProvider } from "@/ai";
 import { isModelAllowed } from "@/ai/models";
-import { chatSystemPrompt } from "@/ai/prompts";
+import { answerSystemPrompt, passesThreshold, sanitizeAnswer } from "@/ai/answer";
+import { getCitations } from "@/domain/corpus";
+import { retrieve } from "@/domain/knowledge/retrieve";
 import { makeError } from "@/ai/errors";
 import type { ProviderName } from "@/ai/provider";
+import { agentModelQuery, agentModelResponse, skillOf } from "@/server/agent-log";
 
 export const runtime = "nodejs";
 
@@ -20,8 +25,15 @@ const BodySchema = z.object({
     .optional(),
 });
 
+/**
+ * Structured general-input endpoint: classifies the user's turn, may answer
+ * lightly with citations drawn ONLY from the committed corpus (server-verified),
+ * and gates display on ANSWER_CONFIDENCE_THRESHOLD — below it the answer is
+ * suppressed and the subject is raised to a human via a review case.
+ */
 export async function POST(req: Request) {
-  await getSessionId();
+  const sessionId = await getSessionId();
+  const env = getEnv();
   let body: unknown;
   try {
     body = await req.json();
@@ -44,11 +56,110 @@ export async function POST(req: Request) {
   } else {
     provider = resolveServerProvider();
   }
-
   if (!provider) {
     return NextResponse.json({ ...makeError("insufficient_credits"), noServerKey: true }, { status: 200 });
   }
 
-  const outcome = await provider.chat(chatSystemPrompt(context), messages);
-  return NextResponse.json(outcome, { status: 200 });
+  const skill = skillOf(req);
+  const threshold = env.ANSWER_CONFIDENCE_THRESHOLD;
+  const relevanceMin = env.KNOWLEDGE_RELEVANCE_MIN;
+  const lastUser = [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
+
+  // Retrieve grounding from the curated knowledge base before calling the model.
+  const hits = retrieve(lastUser, 3);
+  const qualifying = hits.filter((h) => h.score >= relevanceMin);
+  const grounding = qualifying
+    .map(
+      (h) =>
+        `- ${h.entry.topic}${h.entry.scope === "general_guidance" ? " (scope: general guidance)" : ""} (cite: ${h.entry.sourceIds.join(", ")})\n  ${h.entry.answerEn}`,
+    )
+    .join("\n\n");
+  const retrievedNote = hits.length
+    ? `retrieved [${hits.map((h) => `${h.entry.entryId}(${h.score.toFixed(2)})`).join(", ")}] min=${relevanceMin}`
+    : `retrieved [] min=${relevanceMin}`;
+  const grounded = qualifying.length > 0;
+
+  agentModelQuery(skill, "answer", provider.name, provider.model, `${lastUser} — ${retrievedNote}, threshold=${threshold}`);
+
+  const started = Date.now();
+  const outcome = await provider.answer(answerSystemPrompt(grounding, context), messages);
+  const ms = Date.now() - started;
+
+  if (!outcome.ok) {
+    agentModelResponse(skill, "answer", ms, `failed: ${outcome.kind}`);
+    return NextResponse.json(outcome, { status: 200 });
+  }
+
+  const a = sanitizeAnswer(outcome.data);
+  if (!a) {
+    agentModelResponse(skill, "answer", ms, "failed: invalid_output (schema)");
+    return NextResponse.json(makeError("invalid_output"), { status: 200 });
+  }
+
+  // Invoice intent / small talk: no gating needed, no citations expected.
+  if (a.kind !== "question") {
+    agentModelResponse(skill, "answer", ms, `kind=${a.kind}${a.answer ? ` — "${a.answer}"` : ""}`);
+    return NextResponse.json({
+      ok: true,
+      kind: a.kind,
+      text: a.answer,
+      confidence: a.confidence,
+      citations: [],
+      escalated: false,
+      reviewCaseId: null,
+    });
+  }
+
+  const citations = getCitations(a.relatedSourceIds);
+  // Show the answer only when it is grounded in the knowledge base AND the model
+  // is confident enough AND it produced a valid citation. Otherwise raise to a human.
+  const show = grounded && passesThreshold(a.confidence, threshold) && citations.length >= 1;
+
+  if (!show) {
+    const reason = !grounded
+      ? "not grounded in the knowledge base"
+      : citations.length < 1
+        ? "no valid citation"
+        : `below confidence threshold (${a.confidence.toFixed(2)} < ${threshold})`;
+    const review = await getStorage().createReviewCase({
+      sessionId,
+      reason: `General question ${reason}`,
+      decisionCode: "GENERAL_QUESTION",
+      customerName: "—",
+      missingFacts: [],
+      escalationReasons: ["low_confidence_general_answer"],
+      expertQuestion: lastUser,
+    });
+    agentModelResponse(
+      skill,
+      "answer",
+      ms,
+      `kind=question grounded=${grounded ? "yes" : "no"} confidence=${a.confidence.toFixed(2)} (threshold=${threshold}) → escalated to human — ${reason} (review case created)`,
+    );
+    return NextResponse.json({
+      ok: true,
+      kind: a.kind,
+      text: null,
+      confidence: a.confidence,
+      citations: [],
+      escalated: true,
+      reviewCaseId: review.id,
+    });
+  }
+
+  agentModelResponse(
+    skill,
+    "answer",
+    ms,
+    `kind=question grounded=yes confidence=${a.confidence.toFixed(2)} ≥ threshold=${threshold} → answering (${citations.length} sources): "${a.answer}"`,
+  );
+  return NextResponse.json({
+    ok: true,
+    kind: a.kind,
+    text: a.answer,
+    confidence: a.confidence,
+    citations,
+    escalated: false,
+    reviewCaseId: null,
+  });
 }

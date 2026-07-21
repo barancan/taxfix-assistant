@@ -1,5 +1,18 @@
-import { regionForCountry } from "./regions";
-import { majorToMinor } from "./format";
+import { regionForCountry } from "@/lib/regions";
+import { majorToMinor } from "@/lib/format";
+
+export const CATEGORIES = [
+  "software_development",
+  "consulting",
+  "design",
+  "marketing",
+  "translation",
+  "research",
+  "other_professional_service",
+  "unsupported",
+] as const;
+
+export const CURRENCIES = ["EUR", "USD", "GBP", "CHF"] as const;
 
 /** Everything the conversation collects before assessment. */
 export interface Collected {

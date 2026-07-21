@@ -1,11 +1,13 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { ExtractionResultSchema, EXTRACTION_JSON_SCHEMA, EXTRACTION_TOOL_NAME } from "./schema";
+import { AnswerSchema, ANSWER_JSON_SCHEMA, ANSWER_TOOL_NAME } from "./answer";
 import { EXTRACTION_SYSTEM_PROMPT, extractionUserPreamble } from "./prompts";
 import { makeError, normalizeAnthropicError } from "./errors";
 import {
   REQUEST_TIMEOUT_MS,
   type AiExtractInput,
   type AiProvider,
+  type AnswerOutcome,
   type ChatOutcome,
   type ChatTurn,
   type ExtractOutcome,
@@ -91,6 +93,35 @@ export class AnthropicProvider implements AiProvider {
         .trim();
       if (!text) return makeError("invalid_output");
       return { ok: true, text, provider: this.name, model: this.model };
+    } catch (err) {
+      return normalizeAnthropicError(err);
+    }
+  }
+
+  async answer(system: string, turns: ChatTurn[]): Promise<AnswerOutcome> {
+    try {
+      const res = await this.getClient().messages.create(
+        {
+          model: this.model,
+          max_tokens: 700,
+          system,
+          tools: [
+            {
+              name: ANSWER_TOOL_NAME,
+              description: "Classify the user's message and record the structured answer.",
+              input_schema: ANSWER_JSON_SCHEMA,
+            },
+          ],
+          tool_choice: { type: "tool", name: ANSWER_TOOL_NAME },
+          messages: turns.map((t) => ({ role: t.role, content: t.content })),
+        },
+        { timeout: REQUEST_TIMEOUT_MS },
+      );
+      const toolUse = res.content.find((b) => b.type === "tool_use" && b.name === ANSWER_TOOL_NAME);
+      if (!toolUse?.input) return makeError("invalid_output");
+      const parsed = AnswerSchema.safeParse(toolUse.input);
+      if (!parsed.success) return makeError("invalid_output");
+      return { ok: true, data: parsed.data, provider: this.name, model: this.model };
     } catch (err) {
       return normalizeAnthropicError(err);
     }

@@ -11,9 +11,15 @@ import ustg19 from "../../corpus/de-ustg-19.json";
 import bmfKu from "../../corpus/de-bmf-kleinunternehmer-2025.json";
 import vies from "../../corpus/eu-vies.json";
 import ecb from "../../corpus/ecb-exr.json";
+import ustg18 from "../../corpus/de-ustg-18.json";
+import ao138 from "../../corpus/de-ao-138.json";
+import ao139a from "../../corpus/de-ao-139a.json";
+import bzstUstIdNr from "../../corpus/de-bzst-ustidnr.json";
+import elster from "../../corpus/de-elster.json";
+import ao149 from "../../corpus/de-ao-149.json";
 
 /** Committed, versioned official source corpus. Bump on any change. */
-export const CORPUS_VERSION = "2026-07-21.2";
+export const CORPUS_VERSION = "2026-07-21.4";
 
 export const CorpusSourceSchema = z.object({
   sourceId: z.string().min(1),
@@ -49,6 +55,12 @@ const RAW: unknown[] = [
   bmfKu,
   vies,
   ecb,
+  ustg18,
+  ao138,
+  ao139a,
+  bzstUstIdNr,
+  elster,
+  ao149,
 ];
 
 /** Parse + validate at module load. Throws if a source is structurally invalid. */
