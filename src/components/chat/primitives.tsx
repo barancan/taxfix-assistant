@@ -154,6 +154,13 @@ export function CollectedHeader({
   );
 }
 
+/** Pill styling by expected outcome: green = success, yellow = escalation, red = denied. */
+const OUTCOME_PILL: Record<Preset["outcome"], string> = {
+  success: "border-tf-green/40 bg-tf-green-pale text-tf-green-dark",
+  escalate: "border-amber-300/70 bg-tf-yellow-pale text-tf-amber",
+  blocked: "border-red-200 bg-red-50 text-tf-danger",
+};
+
 export function RecommendedPrompts({ onPick }: { onPick: (p: Preset) => void }) {
   return (
     <div className="flex gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -163,7 +170,7 @@ export function RecommendedPrompts({ onPick }: { onPick: (p: Preset) => void }) 
           type="button"
           onClick={() => onPick(p)}
           title={p.sentence}
-          className="shrink-0 whitespace-nowrap rounded-full border border-tf-divider bg-tf-surface-muted px-3 py-1.5 text-xs font-medium text-tf-ink active:scale-95"
+          className={`shrink-0 whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-medium active:scale-95 ${OUTCOME_PILL[p.outcome]}`}
         >
           {p.label}
         </button>

@@ -6,9 +6,13 @@ export interface DraftInput {
   paymentTermsDays: number;
 }
 
+export type PresetOutcome = "success" | "escalate" | "blocked";
+
 export interface Preset {
   id: string;
   label: string;
+  /** Expected engine outcome — drives the example-pill color in the chat UI. */
+  outcome: PresetOutcome;
   sentence: string;
   facts: Omit<ClientFacts, "transaction"> & { transaction: Omit<ClientFacts["transaction"], "invoiceDate"> };
   draft: DraftInput;
@@ -20,6 +24,7 @@ const baseTx = { currency: "EUR", intermediaryInvolved: false, specialEstablishm
 export const PRESETS: Preset[] = [
   {
     id: "us",
+    outcome: "success",
     label: "US client · USD 12,000",
     sentence: "I need to invoice a client in the US for 12,000 USD.",
     facts: {
@@ -33,6 +38,7 @@ export const PRESETS: Preset[] = [
   },
   {
     id: "pt",
+    outcome: "success",
     label: "Portugal B2B · reverse charge",
     sentence: "Invoice a Portuguese company for web development, they gave me a VAT ID.",
     facts: {
@@ -46,6 +52,7 @@ export const PRESETS: Preset[] = [
   },
   {
     id: "de",
+    outcome: "success",
     label: "German B2B · 19% VAT",
     sentence: "Invoice a German GmbH for consulting.",
     facts: {
@@ -59,6 +66,7 @@ export const PRESETS: Preset[] = [
   },
   {
     id: "private",
+    outcome: "blocked",
     label: "Private customer · hard block",
     sentence: "Invoice a private individual for coaching sessions.",
     facts: {
@@ -69,5 +77,20 @@ export const PRESETS: Preset[] = [
     },
     draft: { currency: "EUR", paymentTermsDays: 14, lines: [{ description: "Personal coaching sessions", quantity: "3", unit: "session", unitPriceMinor: "15000" }] },
     customerAddressLines: ["John Private", "Musterweg 3", "10115 Berlin", "Germany"],
+  },
+  {
+    id: "escalate",
+    outcome: "escalate",
+    label: "Unusual service · expert review",
+    sentence: "Invoice a German company for an online course bundle with downloadable materials.",
+    facts: {
+      customer: { name: "Lernwerk GmbH", countryCode: "DE", region: "DE", type: "business" },
+      evidence: { vatIdCheck: "none", businessStatusConfirmedByUser: true, source: "manual" },
+      // Not classifiable as an ordinary professional service → engine escalates.
+      service: { category: "unsupported", normalizedDescription: "Online course bundle with downloadable materials", isGoods: false, supported: false },
+      transaction: { ...baseTx },
+    },
+    draft: { currency: "EUR", paymentTermsDays: 14, lines: [{ description: "Online course bundle", quantity: "1", unit: "bundle", unitPriceMinor: "80000" }] },
+    customerAddressLines: ["Lernwerk GmbH", "Torstraße 20", "10119 Berlin", "Germany"],
   },
 ];
