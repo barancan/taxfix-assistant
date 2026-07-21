@@ -14,6 +14,8 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
+      // Neutralize the `server-only` guard so server modules are unit-testable.
+      "server-only": fileURLToPath(new URL("./tests/stubs/empty.ts", import.meta.url)),
     },
   },
 });

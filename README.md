@@ -38,6 +38,27 @@ Runs in **local demo persistence** mode when Supabase env vars are absent.
 | `npm run check:corpus` | Validate the official source corpus |
 | `npm run audit:package-age` | Fail if any resolved dep is < 10 days old |
 
+## Demo scenarios
+
+Open **Assistant** and tap a preset (or describe an invoice and tap **Extract with AI**):
+
+1. **US client · USD 12,000** → not taxable in Germany; USD invoice with live-ECB EUR accounting metadata.
+2. **Portugal B2B** → reverse charge, both VAT IDs, ZM reporting hint (mocked "Demo verification" VIES).
+3. **German B2B** → 19% German VAT.
+4. **German Kleinunternehmer** (toggle in Account) → §19 exemption, no VAT.
+5. **Private customer** → hard block: no number, no PDF, a **review case** instead.
+
+Without provider keys, **Extract with AI** surfaces a BYOK recovery panel (key held
+in memory only). The manual form always works with no AI.
+
+## Documentation
+
+- [Architecture](docs/architecture.md) · [Trust boundary](docs/trust-boundary.md)
+- [VAT decision table](docs/vat-decision-table.md) · corpus in `src/corpus/`
+- [Supabase setup](docs/supabase-setup.md) · migrations in `supabase/migrations/`
+- [Security & privacy](docs/security-privacy.md) · [Dependency-age policy](docs/dependency-audit.md)
+- [Limitations](docs/limitations.md) · [AI-assisted dev log](docs/ai-dev-log.md)
+
 ## Engineering constraints
 
 - No dependency version released within the previous 10 days (audited, fail-closed).
