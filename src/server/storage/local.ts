@@ -1,4 +1,6 @@
 import { randomUUID } from "node:crypto";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { CORPUS_VERSION } from "@/domain/corpus";
 import type {
   DecisionRunRecord,
@@ -10,29 +12,66 @@ import type {
 } from "./types";
 
 /**
- * In-memory local persistence fallback. Data lives for the life of the server
- * process (per browser session by id) — never claims to be remote storage. Used
- * automatically when Supabase env vars are absent, and in tests.
+ * Local persistence fallback used when Supabase env vars are absent. Metadata is
+ * written to `.local-store/db.json` and generated PDFs to `.local-store/pdfs/…`
+ * so invoices, history, and previews survive dev-server restarts. All disk I/O is
+ * best-effort: on a read-only filesystem it silently degrades to memory-only.
+ * (Never claims to be remote storage — the UI shows a "Local demo" banner.)
  */
+const ROOT = join(process.cwd(), ".local-store");
+const DB_FILE = join(ROOT, "db.json");
+const PDF_DIR = join(ROOT, "pdfs");
+
 interface Db {
   counters: Map<number, number>;
   invoices: Map<string, StoredInvoice>;
-  pdfs: Map<string, Uint8Array>;
   reviews: Map<string, StoredReviewCase>;
   runs: DecisionRunRecord[];
 }
 
-// Persist across hot reloads / requests in the same process.
+function load(): Db {
+  const empty: Db = { counters: new Map(), invoices: new Map(), reviews: new Map(), runs: [] };
+  try {
+    if (!existsSync(DB_FILE)) return empty;
+    const raw = JSON.parse(readFileSync(DB_FILE, "utf8")) as {
+      counters?: Record<string, number>;
+      invoices?: StoredInvoice[];
+      reviews?: StoredReviewCase[];
+    };
+    return {
+      counters: new Map(Object.entries(raw.counters ?? {}).map(([k, v]) => [Number(k), v])),
+      invoices: new Map((raw.invoices ?? []).map((i) => [i.id, i])),
+      reviews: new Map((raw.reviews ?? []).map((r) => [r.id, r])),
+      runs: [],
+    };
+  } catch {
+    return empty;
+  }
+}
+
+// Persist across HMR / requests within a process, and rehydrate from disk.
 const g = globalThis as unknown as { __tfxLocalDb?: Db };
-const db: Db =
-  g.__tfxLocalDb ??
-  (g.__tfxLocalDb = {
-    counters: new Map(),
-    invoices: new Map(),
-    pdfs: new Map(),
-    reviews: new Map(),
-    runs: [],
-  });
+const db: Db = g.__tfxLocalDb ?? (g.__tfxLocalDb = load());
+
+function persist(): void {
+  try {
+    mkdirSync(ROOT, { recursive: true });
+    writeFileSync(
+      DB_FILE,
+      JSON.stringify({
+        counters: Object.fromEntries(db.counters),
+        invoices: [...db.invoices.values()],
+        reviews: [...db.reviews.values()],
+      }),
+    );
+  } catch {
+    // read-only FS (e.g. serverless) → stay in memory
+  }
+}
+
+function pdfPathFor(sessionId: string, invoiceId: string): string {
+  return join(PDF_DIR, sessionId, `${invoiceId}.pdf`);
+}
 
 export class LocalStorageAdapter implements StorageAdapter {
   readonly mode = "local" as const;
@@ -40,6 +79,7 @@ export class LocalStorageAdapter implements StorageAdapter {
   async allocateInvoiceNumber(year: number): Promise<number> {
     const next = (db.counters.get(year) ?? 0) + 1;
     db.counters.set(year, next);
+    persist();
     return next;
   }
 
@@ -61,12 +101,16 @@ export class LocalStorageAdapter implements StorageAdapter {
       createdAt: new Date().toISOString(),
     };
     db.invoices.set(inv.id, inv);
+    persist();
     return inv;
   }
 
   async setInvoiceStatus(id: string, status: InvoiceStatus, pdfPath: string | null): Promise<void> {
     const inv = db.invoices.get(id);
-    if (inv) db.invoices.set(id, { ...inv, status, pdfPath });
+    if (inv) {
+      db.invoices.set(id, { ...inv, status, pdfPath });
+      persist();
+    }
   }
 
   async listInvoices(sessionId: string): Promise<StoredInvoice[]> {
@@ -81,13 +125,24 @@ export class LocalStorageAdapter implements StorageAdapter {
   }
 
   async savePdf(sessionId: string, invoiceId: string, bytes: Uint8Array): Promise<string> {
-    const path = `${sessionId}/${invoiceId}.pdf`;
-    db.pdfs.set(path, bytes);
-    return path;
+    const file = pdfPathFor(sessionId, invoiceId);
+    try {
+      mkdirSync(dirname(file), { recursive: true });
+      writeFileSync(file, bytes);
+    } catch {
+      // best-effort; getPdf will 404 if the write failed
+    }
+    return `${sessionId}/${invoiceId}.pdf`;
   }
 
   async getPdf(sessionId: string, invoiceId: string): Promise<Uint8Array | null> {
-    return db.pdfs.get(`${sessionId}/${invoiceId}.pdf`) ?? null;
+    const file = pdfPathFor(sessionId, invoiceId);
+    try {
+      if (!existsSync(file)) return null;
+      return new Uint8Array(readFileSync(file));
+    } catch {
+      return null;
+    }
   }
 
   async createReviewCase(
@@ -95,6 +150,7 @@ export class LocalStorageAdapter implements StorageAdapter {
   ): Promise<StoredReviewCase> {
     const review: StoredReviewCase = { ...rec, id: randomUUID(), createdAt: new Date().toISOString() };
     db.reviews.set(review.id, review);
+    persist();
     return review;
   }
 
