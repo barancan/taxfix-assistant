@@ -13,16 +13,21 @@ import vies from "../../corpus/eu-vies.json";
 import ecb from "../../corpus/ecb-exr.json";
 
 /** Committed, versioned official source corpus. Bump on any change. */
-export const CORPUS_VERSION = "2026-07-21.1";
+export const CORPUS_VERSION = "2026-07-21.2";
 
 export const CorpusSourceSchema = z.object({
   sourceId: z.string().min(1),
   jurisdiction: z.enum(["DE", "EU"]),
   officialTitle: z.string().min(1),
+  // Controlled English translation of the title (committed, not LLM-generated).
+  officialTitleEn: z.string().min(1),
   issuingAuthority: z.string().min(1),
   legalSection: z.string().min(1),
   topic: z.string().min(1),
   excerpt: z.string().min(1),
+  // Controlled English translation of the excerpt. The original `excerpt` (and
+  // `url`) remain the authoritative source; this is for display only.
+  excerptEn: z.string().min(1),
   url: z.string().url(),
   effectiveDate: isoDate,
   retrievedDate: isoDate,
@@ -62,10 +67,18 @@ export function getSource(id: string): CorpusSource | undefined {
 
 export interface Citation {
   sourceId: string;
+  /** Authoritative (original) title, usually German. */
   title: string;
+  /** Controlled English translation of the title (shown by default in EN UI). */
+  titleEn: string;
   issuer: string;
   section: string;
+  /** Authoritative (original) excerpt, usually German. */
   excerpt: string;
+  /** Controlled English translation of the excerpt (shown by default). */
+  excerptEn: string;
+  /** Language of the original excerpt ("de" | "en") — drives the toggle. */
+  language: "de" | "en";
   effectiveDate: string;
   retrievedDate: string;
   url: string;
@@ -80,9 +93,12 @@ export function getCitations(sourceIds: string[]): Citation[] {
     out.push({
       sourceId: s.sourceId,
       title: s.officialTitle,
+      titleEn: s.officialTitleEn,
       issuer: s.issuingAuthority,
       section: s.legalSection,
       excerpt: s.excerpt,
+      excerptEn: s.excerptEn,
+      language: s.language,
       effectiveDate: s.effectiveDate,
       retrievedDate: s.retrievedDate,
       url: s.url,

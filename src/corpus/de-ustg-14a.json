@@ -5,6 +5,8 @@
   "issuingAuthority": "Bundesministerium der Justiz (gesetze-im-internet.de)",
   "legalSection": "§ 14a Abs. 1 und Abs. 5 (Reverse-Charge-Angabe, USt-IdNrn.)",
   "topic": "invoice_reverse_charge_wording",
+  "officialTitleEn": "VAT Act (UStG) §14a — Additional obligations for certain transactions",
+  "excerptEn": "For a service taxable in another EU Member State for which the recipient owes the tax, the VAT IDs of both the supplier and the recipient must be stated and the invoice must include the wording 'Steuerschuldnerschaft des Leistungsempfängers' (reverse charge).",
   "excerpt": "Bei einer im übrigen Gemeinschaftsgebiet steuerpflichtigen sonstigen Leistung, für die der Leistungsempfänger die Steuer schuldet, ist die USt-IdNr. des leistenden Unternehmers und des Leistungsempfängers anzugeben und die Rechnung muss die Angabe \"Steuerschuldnerschaft des Leistungsempfängers\" (reverse charge) enthalten.",
   "url": "https://www.gesetze-im-internet.de/ustg_1980/__14a.html",
   "effectiveDate": "2013-06-30",

@@ -5,6 +5,8 @@
   "issuingAuthority": "Bundesministerium der Justiz (gesetze-im-internet.de)",
   "legalSection": "§ 19 (Steuerbefreiung für Kleinunternehmer, Fassung ab 01.01.2025)",
   "topic": "small_business_exemption",
+  "officialTitleEn": "VAT Act (UStG) §19 — Small business scheme",
+  "excerptEn": "Transactions carried out by domestically established small businesses are tax-exempt if total turnover did not exceed EUR 25,000 in the previous calendar year and does not exceed EUR 100,000 in the current calendar year. Input-VAT deduction is excluded. (Version in force from 1 January 2025.)",
   "excerpt": "Von im Inland ansässigen Kleinunternehmern bewirkte Umsätze sind steuerfrei, wenn der Gesamtumsatz im vorangegangenen Kalenderjahr 25 000 Euro nicht überschritten hat und im laufenden Kalenderjahr 100 000 Euro nicht überschreitet. Ein Vorsteuerabzug ist ausgeschlossen.",
   "url": "https://www.gesetze-im-internet.de/ustg_1980/__19.html",
   "effectiveDate": "2025-01-01",

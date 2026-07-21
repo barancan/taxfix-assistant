@@ -1,490 +1,308 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import Link from "next/link";
-import type { DecisionResult } from "@/domain/schemas";
-import type { Citation } from "@/domain/corpus";
-import { DecisionCard } from "@/components/DecisionCard";
-import { COUNTRY_OPTIONS, regionForCountry } from "@/lib/regions";
-import { PRESETS, type Preset } from "@/lib/presets";
-import { majorToMinor, minorToMajor } from "@/lib/format";
-import { MODEL_ALLOWLIST } from "@/ai/models";
+import { useEffect, useRef, useState } from "react";
+import type { Preset } from "@/lib/presets";
+import { emptyCollected, buildClientFacts, buildInvoicePayload, type Collected } from "@/lib/facts";
+import { SCRIPT, newId, type Msg, type Step } from "@/lib/conversation";
 import type { ExtractionResult } from "@/ai/schema";
 import type { ProviderName } from "@/ai/provider";
+import { minorToMajor } from "@/lib/format";
+import { Bubble, ChatInput, CollectedHeader, RecommendedPrompts, TypingBubble } from "@/components/chat/primitives";
+import { DecisionCard } from "@/components/DecisionCard";
+import {
+  BlockedCard,
+  ByokCard,
+  CompanyConfirmCard,
+  InvoiceReadyCard,
+  LegalConfirmCard,
+  LineItemsCard,
+} from "@/components/chat/Cards";
 
-interface LineForm {
-  description: string;
-  quantity: string;
-  unit: string;
-  unitPriceMajor: string;
+interface PendingExtract {
+  kind: "company" | "lineitems";
+  text: string;
+  file: File | null;
 }
 
-interface FormState {
-  sentence: string;
-  customerName: string;
-  countryCode: string;
-  customerType: "business" | "private" | "unknown";
-  businessConfirmed: boolean;
-  vatId: string;
-  demoVies: boolean;
-  serviceCategory: string;
-  serviceDescription: string;
-  currency: string;
-  addressText: string;
-  lines: LineForm[];
+function applyExtraction(x: ExtractionResult): Partial<Collected> {
+  const p: Partial<Collected> = {};
+  if (x.customerName) p.customerName = x.customerName;
+  if (x.customerCountryCode) p.countryCode = x.customerCountryCode.toUpperCase();
+  if (x.customerVatId) p.vatId = x.customerVatId;
+  if (x.suggestedCategory) p.serviceCategory = x.suggestedCategory;
+  if (x.serviceDescription) p.serviceDescription = x.serviceDescription;
+  if (x.currency) p.currency = x.currency.toUpperCase();
+  if (x.customerAddressLines?.length) p.addressLines = x.customerAddressLines;
+  return p;
 }
 
-const CATEGORIES = [
-  "software_development", "consulting", "design", "marketing", "translation", "research", "other_professional_service", "unsupported",
-];
-
-const today = () => new Date().toISOString().slice(0, 10);
-
-function fromPreset(p: Preset): FormState {
-  return {
-    sentence: p.sentence,
-    customerName: p.facts.customer.name,
-    countryCode: p.facts.customer.countryCode,
-    customerType: p.facts.customer.type,
-    businessConfirmed: p.facts.evidence.businessStatusConfirmedByUser,
-    vatId: p.facts.customer.vatId ?? "",
-    demoVies: p.facts.evidence.vatIdCheck === "demo_vies",
-    serviceCategory: p.facts.service.category,
-    serviceDescription: p.facts.service.normalizedDescription,
-    currency: p.draft.currency,
-    addressText: p.customerAddressLines.join("\n"),
-    lines: p.draft.lines.map((l) => ({
-      description: l.description,
-      quantity: l.quantity,
-      unit: l.unit,
-      unitPriceMajor: minorToMajor(l.unitPriceMinor),
-    })),
-  };
-}
-
-const EMPTY: FormState = {
-  sentence: "",
-  customerName: "",
-  countryCode: "US",
-  customerType: "business",
-  businessConfirmed: false,
-  vatId: "",
-  demoVies: false,
-  serviceCategory: "consulting",
-  serviceDescription: "",
-  currency: "EUR",
-  addressText: "",
-  lines: [{ description: "", quantity: "1", unit: "project", unitPriceMajor: "0.00" }],
-};
-
-interface DecisionResponse {
-  decision: DecisionResult;
-  citations: Citation[];
-  reviewCaseId: string | null;
-  storageMode: string;
+function extractionLines(x: ExtractionResult): Collected["lines"] {
+  if (x.lineItems?.length) {
+    return x.lineItems.map((li) => ({
+      description: li.description,
+      quantity: li.quantity ?? "1",
+      unit: "unit",
+      unitPriceMajor: li.unitPriceMajor ?? "0.00",
+    }));
+  }
+  if (x.amountMajor) {
+    return [{ description: x.serviceDescription ?? "Service", quantity: "1", unit: "project", unitPriceMajor: x.amountMajor }];
+  }
+  return [];
 }
 
 export default function AssistantPage() {
-  const [form, setForm] = useState<FormState>(EMPTY);
-  const [decision, setDecision] = useState<DecisionResponse | null>(null);
-  const [invoice, setInvoice] = useState<{ id: string; invoiceNumber: string; status: string } | null>(null);
-  const [blocked, setBlocked] = useState<{ reviewCaseId: string | null; reason: string } | null>(null);
+  const [messages, setMessages] = useState<Msg[]>(() => [
+    { id: newId(), role: "assistant", kind: "text", text: SCRIPT.intent },
+  ]);
+  const [step, setStep] = useState<Step>("intent");
+  const [c, setC] = useState<Collected>(emptyCollected());
+  const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const [aiError, setAiError] = useState<{ userMessage: string; byokRecoverable: boolean } | null>(null);
+  const [typing, setTyping] = useState(false);
+  const [canGenerate, setCanGenerate] = useState(false);
   const [byokOpen, setByokOpen] = useState(false);
-  const [byok, setByok] = useState<{ provider: ProviderName; model: string; apiKey: string }>({
-    provider: "anthropic",
-    model: "claude-sonnet-5",
-    apiKey: "",
-  });
+  const [aiError, setAiError] = useState("");
+  const [byok, setByok] = useState<{ provider: ProviderName; model: string; apiKey: string }>({ provider: "anthropic", model: "claude-sonnet-5", apiKey: "" });
+  const pending = useRef<PendingExtract | null>(null);
+  const endRef = useRef<HTMLDivElement>(null);
 
-  const region = useMemo(() => regionForCountry(form.countryCode), [form.countryCode]);
-  const set = (patch: Partial<FormState>) => setForm((f) => ({ ...f, ...patch }));
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, typing, step, byokOpen]);
 
-  function applyExtraction(x: ExtractionResult) {
-    setForm((f) => ({
-      ...f,
-      customerName: x.customerName ?? f.customerName,
-      countryCode: x.customerCountryCode ?? f.countryCode,
-      vatId: x.customerVatId ?? f.vatId,
-      serviceCategory: x.suggestedCategory ?? f.serviceCategory,
-      serviceDescription: x.serviceDescription ?? f.serviceDescription,
-      currency: x.currency ?? f.currency,
-      customerType: "unknown", // AI never sets legal status — user must confirm
-      businessConfirmed: false,
-      addressText: x.customerAddressLines.length ? x.customerAddressLines.join("\n") : f.addressText,
-      lines: x.lineItems.length
-        ? x.lineItems.map((li) => ({ description: li.description, quantity: li.quantity ?? "1", unit: "unit", unitPriceMajor: li.unitPriceMajor ?? "0.00" }))
-        : x.amountMajor
-          ? [{ description: x.serviceDescription ?? "Service", quantity: "1", unit: "project", unitPriceMajor: x.amountMajor }]
-          : f.lines,
-    }));
+  const patch = (p: Partial<Collected>) => setC((x) => ({ ...x, ...p }));
+  const say = (text: string) => setMessages((m) => [...m, { id: newId(), role: "assistant", kind: "text", text }]);
+  const youSaid = (text: string) => setMessages((m) => [...m, { id: newId(), role: "user", kind: "text", text }]);
+  const showCard = (card: NonNullable<Msg["card"]>) => setMessages((m) => [...m, { id: newId(), role: "assistant", kind: "card", card }]);
+
+  function pickPreset(p: Preset) {
+    youSaid(p.sentence);
+    setC({
+      intent: p.sentence,
+      customerName: p.facts.customer.name,
+      countryCode: p.facts.customer.countryCode,
+      customerType: p.facts.customer.type,
+      businessConfirmed: p.facts.evidence.businessStatusConfirmedByUser,
+      vatId: p.facts.customer.vatId ?? "",
+      demoVies: p.facts.evidence.vatIdCheck === "demo_vies",
+      serviceCategory: p.facts.service.category,
+      serviceDescription: p.facts.service.normalizedDescription,
+      currency: p.draft.currency,
+      addressLines: p.customerAddressLines,
+      lines: p.draft.lines.map((l) => ({ description: l.description, quantity: l.quantity, unit: l.unit, unitPriceMajor: minorToMajor(l.unitPriceMinor) })),
+    });
+    say(`Great — here are the details I have for ${p.facts.customer.name}. Please confirm.`);
+    setStep("company_confirm");
   }
 
-  async function extractWithAI() {
-    setAiError(null);
-    reset();
+  function submitIntent(text: string) {
+    youSaid(text);
+    patch({ intent: text });
+    say(SCRIPT.company_ask!);
+    setStep("company_ask");
+  }
+
+  async function callExtract(text: string, file: File | null): Promise<Response> {
+    const withByok = byok.apiKey ? { provider: byok.provider, model: byok.model, apiKey: byok.apiKey } : undefined;
+    if (file) {
+      const fd = new FormData();
+      fd.append("text", text);
+      fd.append("files", file);
+      if (withByok) fd.append("byok", JSON.stringify(withByok));
+      return fetch("/api/extract", { method: "POST", body: fd });
+    }
+    return fetch("/api/extract", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text, ...(withByok ? { byok: withByok } : {}) }) });
+  }
+
+  async function runExtraction(kind: "company" | "lineitems", text: string, file: File | null) {
+    pending.current = { kind, text, file };
     setBusy(true);
+    setTyping(true);
+    setAiError("");
     try {
-      const res = await fetch("/api/extract", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ text: form.sentence, ...(byok.apiKey ? { byok } : {}) }),
-      });
+      const res = await callExtract(text, file);
       const data = await res.json();
       if (data?.ok === true) {
-        applyExtraction(data.data as ExtractionResult);
         setByokOpen(false);
-      } else if (data?.ok === false) {
-        setAiError({ userMessage: data.userMessage, byokRecoverable: data.byokRecoverable });
-        if (data.byokRecoverable) setByokOpen(true);
+        const x = data.data as ExtractionResult;
+        if (kind === "company") {
+          patch(applyExtraction(x));
+          say("Here's what I found — please confirm.");
+          setStep("company_confirm");
+        } else {
+          const lines = extractionLines(x);
+          patch({ lines });
+          say("Here are the line items I read — check the amounts.");
+          setStep("lineitems_confirm");
+        }
+      } else if (data?.ok === false && data.byokRecoverable) {
+        setAiError(data.noServerKey ? "No AI key is configured on the server. Add your own to use AI extraction." : data.userMessage);
+        setByokOpen(true);
       } else {
-        setAiError({ userMessage: "Could not extract. Enter details manually below.", byokRecoverable: false });
+        // Non-recoverable / empty → fall back to manual entry.
+        if (kind === "company") {
+          say("I couldn't read that clearly — please enter the details.");
+          setStep("company_confirm");
+        } else {
+          say("Please enter the line items.");
+          setStep("lineitems_confirm");
+        }
       }
     } catch {
-      setAiError({ userMessage: "Extraction failed. Enter details manually below.", byokRecoverable: false });
+      say("Something went wrong reading that. Please enter the details manually.");
+      setStep(kind === "company" ? "company_confirm" : "lineitems_confirm");
     } finally {
       setBusy(false);
+      setTyping(false);
     }
   }
 
-  function reset() {
-    setDecision(null);
-    setInvoice(null);
-    setBlocked(null);
-    setError(null);
+  function confirmCompany() {
+    say("Thanks. A couple of things I must confirm about this customer.");
+    setStep("legal");
   }
 
-  function buildFacts() {
-    return {
-      customer: {
-        name: form.customerName || "Customer",
-        countryCode: form.countryCode,
-        region,
-        type: form.customerType,
-        ...(form.vatId ? { vatId: form.vatId } : {}),
-      },
-      evidence: {
-        vatIdCheck: region === "EU" && form.vatId ? (form.demoVies ? "demo_vies" : "format_only") : "none",
-        ...(form.demoVies ? { vatIdFormatValid: true } : {}),
-        businessStatusConfirmedByUser: form.businessConfirmed,
-        source: "manual",
-      },
-      service: {
-        category: form.serviceCategory,
-        normalizedDescription: form.serviceDescription || form.lines[0]?.description || "Professional service",
-        isGoods: false,
-        supported: form.serviceCategory !== "unsupported",
-      },
-      transaction: {
-        invoiceDate: today(),
-        currency: form.currency,
-        intermediaryInvolved: false,
-        specialEstablishment: false,
-        exceptionFlags: [],
-      },
-    };
+  function confirmLegal() {
+    if (c.lines.length > 0) {
+      say("Here are the line items I have — edit or confirm.");
+      setStep("lineitems_confirm");
+    } else {
+      say(SCRIPT.lineitems_ask!);
+      setStep("lineitems_ask");
+    }
   }
 
-  async function getDecision() {
-    reset();
-    setBusy(true);
+  async function confirmLineItems() {
+    setStep("assessing");
+    setTyping(true);
+    say("Let me check the VAT treatment and prepare everything…");
     try {
       const res = await fetch("/api/decision", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ facts: buildFacts() }),
+        body: JSON.stringify({ facts: buildClientFacts(c) }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "decision_failed");
-      setDecision(data);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong");
+      const decision = data.decision;
+      if (decision.status === "approved") {
+        showCard({ t: "decision", decision, citations: data.citations });
+        say("Good news — this is supported. Want me to generate the invoice?");
+        setCanGenerate(true);
+        setStep("decided");
+      } else if (decision.status === "needs_clarification") {
+        showCard({ t: "decision", decision, citations: data.citations });
+        say("I need a bit more detail before I can decide.");
+        setStep("legal");
+      } else {
+        showCard({ t: "blocked", decision, citations: data.citations, reviewCaseId: data.reviewCaseId });
+        setStep("decided");
+      }
+    } catch {
+      say("I couldn't complete the assessment. Please try again.");
+      setStep("lineitems_confirm");
     } finally {
-      setBusy(false);
+      setTyping(false);
     }
   }
 
-  async function generate() {
+  async function generateInvoice() {
     setBusy(true);
-    setError(null);
+    setCanGenerate(false);
+    setTyping(true);
     try {
-      const payload = {
-        facts: buildFacts(),
-        draft: {
-          currency: form.currency,
-          invoiceDate: today(),
-          paymentTermsDays: 14,
-          lines: form.lines.map((l) => ({
-            description: l.description,
-            quantity: l.quantity,
-            unit: l.unit,
-            unitPriceMinor: majorToMinor(l.unitPriceMajor, form.currency === "JPY" ? 0 : 2),
-            isReimbursable: false,
-          })),
-        },
-        customerAddressLines: form.addressText.split("\n").map((s) => s.trim()).filter(Boolean),
-      };
       const res = await fetch("/api/invoice", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(buildInvoicePayload(c)),
       });
       const data = await res.json();
       if (res.status === 409) {
-        setBlocked({ reviewCaseId: data.reviewCaseId, reason: data.reason });
+        say("I can no longer issue this invoice — it needs expert review.");
         return;
       }
-      if (!res.ok) throw new Error(data.error ?? "invoice_failed");
-      setInvoice({ id: data.invoice.id, invoiceNumber: data.invoice.invoiceNumber, status: data.invoice.status });
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong");
+      showCard({ t: "invoiceReady", id: data.invoice.id, invoiceNumber: data.invoice.invoiceNumber, status: data.invoice.status });
+      say("All done! Your invoice is ready above.");
+    } catch {
+      say("Generation failed. Please try again.");
+      setCanGenerate(true);
     } finally {
       setBusy(false);
+      setTyping(false);
     }
   }
 
-  const label = "block text-xs font-semibold uppercase tracking-wide text-tf-gray mb-1";
-  const input = "w-full rounded-tf border border-tf-divider px-3 py-2 text-sm";
+  function onSend() {
+    const text = input.trim();
+    if (!text) return;
+    setInput("");
+    if (step === "intent") submitIntent(text);
+    else if (step === "company_ask") { youSaid(text); runExtraction("company", text, null); }
+    else if (step === "lineitems_ask") { youSaid(text); runExtraction("lineitems", text, null); }
+  }
+
+  function onAttach(file: File) {
+    youSaid("📷 Scanned a document");
+    runExtraction(step === "lineitems_ask" ? "lineitems" : "company", "", file);
+  }
+
+  function retryByok() {
+    const p = pending.current;
+    if (p) runExtraction(p.kind, p.text, p.file);
+  }
+
+  const showInput = !byokOpen && (step === "intent" || step === "company_ask" || step === "lineitems_ask");
+  const placeholder =
+    step === "intent" ? "Describe the invoice you need…" :
+    step === "company_ask" ? "Company name, country, VAT ID…" :
+    step === "lineitems_ask" ? "e.g. 40 hours at €95 for web development" : "";
 
   return (
-    <div className="flex flex-col gap-5">
-      <div>
-        <h1 className="text-2xl font-extrabold tracking-tight">Assistant</h1>
-        <p className="mt-1 text-sm text-tf-gray">
-          Describe the invoice you need. We confirm the details, verify the VAT treatment, and prepare the document.
-        </p>
-      </div>
-
-      <textarea
-        className={`${input} min-h-20`}
-        placeholder="e.g. I need to invoice a client in the US for 12,000 USD."
-        value={form.sentence}
-        onChange={(e) => set({ sentence: e.target.value })}
-        aria-label="Describe your invoice"
+    <div className="flex min-h-[calc(100dvh-9rem)] flex-col">
+      <CollectedHeader
+        collected={c}
+        onEdit={(section) => setStep(section === "company" ? "company_confirm" : section === "legal" ? "legal" : "lineitems_confirm")}
       />
 
-      <div className="flex items-center gap-2">
-        <button
-          onClick={extractWithAI}
-          disabled={busy || !form.sentence.trim()}
-          className="rounded-full border border-tf-green/40 bg-tf-green-pale px-4 py-2 text-sm font-semibold text-tf-green-dark disabled:opacity-50"
-        >
-          {busy ? "Extracting…" : "Extract with AI"}
-        </button>
-        <span className="text-xs text-tf-gray">Uploaded content is sent to the AI provider for extraction and is not stored.</span>
+      <div className="flex flex-1 flex-col gap-3 py-4">
+        {messages.map((m) =>
+          m.kind === "text" ? (
+            <Bubble key={m.id} role={m.role}>{m.text}</Bubble>
+          ) : m.card?.t === "decision" ? (
+            <DecisionCard key={m.id} decision={m.card.decision} citations={m.card.citations} />
+          ) : m.card?.t === "blocked" ? (
+            <BlockedCard key={m.id} decision={m.card.decision} citations={m.card.citations} reviewCaseId={m.card.reviewCaseId} />
+          ) : m.card?.t === "invoiceReady" ? (
+            <InvoiceReadyCard key={m.id} id={m.card.id} invoiceNumber={m.card.invoiceNumber} status={m.card.status} />
+          ) : null,
+        )}
+
+        {typing ? <TypingBubble /> : null}
+
+        {step === "company_confirm" ? <CompanyConfirmCard value={c} onPatch={patch} onConfirm={confirmCompany} /> : null}
+        {step === "legal" ? <LegalConfirmCard value={c} onPatch={patch} onConfirm={confirmLegal} /> : null}
+        {step === "lineitems_confirm" ? <LineItemsCard value={c} onPatch={patch} onConfirm={confirmLineItems} /> : null}
+
+        {byokOpen ? (
+          <ByokCard byok={byok} onChange={setByok} onRetry={retryByok} message={aiError} busy={busy} />
+        ) : null}
+
+        {step === "intent" ? <RecommendedPrompts onPick={pickPreset} /> : null}
+
+        <div ref={endRef} />
       </div>
 
-      {aiError ? (
-        <div className="rounded-tf border border-tf-divider bg-tf-yellow-pale p-3 text-sm text-tf-amber" role="alert">
-          {aiError.userMessage}
-        </div>
-      ) : null}
-
-      {byokOpen ? (
-        <div className="rounded-tf-lg border border-tf-divider bg-tf-surface p-4">
-          <h3 className="text-sm font-bold">Use your own API key</h3>
-          <p className="mt-1 text-xs text-tf-gray">
-            Held in memory for this request only — never stored, logged, or kept after a refresh.
-          </p>
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            <select
-              className="rounded-tf border border-tf-divider px-2 py-2 text-sm"
-              value={byok.provider}
-              onChange={(e) => {
-                const provider = e.target.value as ProviderName;
-                setByok((b) => ({ ...b, provider, model: MODEL_ALLOWLIST[provider][0]!.id }));
-              }}
-            >
-              <option value="anthropic">Anthropic</option>
-              <option value="openai">OpenAI</option>
-            </select>
-            <select
-              className="rounded-tf border border-tf-divider px-2 py-2 text-sm"
-              value={byok.model}
-              onChange={(e) => setByok((b) => ({ ...b, model: e.target.value }))}
-            >
-              {MODEL_ALLOWLIST[byok.provider].map((m) => (
-                <option key={m.id} value={m.id}>{m.label}</option>
-              ))}
-            </select>
-            <input
-              type="password"
-              className="col-span-2 rounded-tf border border-tf-divider px-3 py-2 text-sm"
-              placeholder="API key (kept in memory only)"
-              value={byok.apiKey}
-              onChange={(e) => setByok((b) => ({ ...b, apiKey: e.target.value }))}
-              autoComplete="off"
-            />
-          </div>
-          <button
-            onClick={extractWithAI}
-            disabled={busy || !byok.apiKey}
-            className="mt-3 rounded-full bg-tf-green-strong px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
-          >
-            Retry with my key
+      <div className="sticky bottom-[76px] z-10 -mx-5 border-t border-tf-divider bg-tf-surface px-5 py-2.5">
+        {canGenerate ? (
+          <button onClick={generateInvoice} disabled={busy} className="w-full rounded-full bg-tf-green-strong px-5 py-3 text-sm font-semibold text-white disabled:opacity-50">
+            {busy ? "Generating…" : "Generate invoice"}
           </button>
-        </div>
-      ) : null}
-
-      <div className="flex flex-wrap gap-2">
-        {PRESETS.map((p) => (
-          <button
-            key={p.id}
-            onClick={() => { setForm(fromPreset(p)); reset(); }}
-            className="rounded-full border border-tf-divider bg-tf-surface px-3 py-1.5 text-xs font-medium text-tf-ink active:scale-95"
-          >
-            {p.label}
-          </button>
-        ))}
+        ) : showInput ? (
+          <ChatInput value={input} onChange={setInput} onSend={onSend} onAttach={onAttach} placeholder={placeholder} disabled={busy} showAttach={step === "company_ask"} />
+        ) : (
+          <p className="text-center text-xs text-tf-gray">Use the card above to continue.</p>
+        )}
       </div>
-
-      <div className="rounded-tf-lg border border-tf-divider bg-tf-surface p-4">
-        <h2 className="mb-3 text-sm font-bold">Confirm the details</h2>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="col-span-2">
-            <label className={label}>Customer name</label>
-            <input className={input} value={form.customerName} onChange={(e) => set({ customerName: e.target.value })} />
-          </div>
-          <div>
-            <label className={label}>Country</label>
-            <select className={input} value={form.countryCode} onChange={(e) => set({ countryCode: e.target.value })}>
-              {COUNTRY_OPTIONS.map((c) => (
-                <option key={c.code} value={c.code}>{c.name} ({c.code})</option>
-              ))}
-            </select>
-            <p className="mt-1 text-xs text-tf-gray">Region: {region}</p>
-          </div>
-          <div>
-            <label className={label}>Customer is a…</label>
-            <select className={input} value={form.customerType} onChange={(e) => set({ customerType: e.target.value as FormState["customerType"] })}>
-              <option value="business">Business</option>
-              <option value="private">Private individual</option>
-              <option value="unknown">Not sure</option>
-            </select>
-          </div>
-          {region === "EU" ? (
-            <div className="col-span-2">
-              <label className={label}>Customer VAT ID</label>
-              <input className={input} value={form.vatId} onChange={(e) => set({ vatId: e.target.value })} placeholder="e.g. PT123456789" />
-              <label className="mt-2 flex items-center gap-2 text-xs text-tf-gray">
-                <input type="checkbox" checked={form.demoVies} onChange={(e) => set({ demoVies: e.target.checked })} />
-                Use seeded “Demo verification” (mock VIES)
-              </label>
-            </div>
-          ) : null}
-          <div>
-            <label className={label}>Service</label>
-            <select className={input} value={form.serviceCategory} onChange={(e) => set({ serviceCategory: e.target.value })}>
-              {CATEGORIES.map((c) => <option key={c} value={c}>{c.replace(/_/g, " ")}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className={label}>Currency</label>
-            <select className={input} value={form.currency} onChange={(e) => set({ currency: e.target.value })}>
-              {["EUR", "USD", "GBP", "CHF"].map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </div>
-          <label className="col-span-2 flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={form.businessConfirmed} onChange={(e) => set({ businessConfirmed: e.target.checked })} />
-            I confirm the customer is acting as a business.
-          </label>
-          <div className="col-span-2">
-            <label className={label}>Customer address (one line each)</label>
-            <textarea className={`${input} min-h-16`} value={form.addressText} onChange={(e) => set({ addressText: e.target.value })} />
-          </div>
-        </div>
-
-        <h3 className="mt-4 mb-2 text-sm font-bold">Line items</h3>
-        {form.lines.map((l, i) => (
-          <div key={i} className="mb-2 grid grid-cols-6 gap-2">
-            <input className={`${input} col-span-3`} placeholder="Description" value={l.description}
-              onChange={(e) => set({ lines: form.lines.map((x, j) => j === i ? { ...x, description: e.target.value } : x) })} />
-            <input className={input} placeholder="Qty" value={l.quantity}
-              onChange={(e) => set({ lines: form.lines.map((x, j) => j === i ? { ...x, quantity: e.target.value } : x) })} />
-            <input className={`${input} col-span-2`} placeholder="Unit price" value={l.unitPriceMajor}
-              onChange={(e) => set({ lines: form.lines.map((x, j) => j === i ? { ...x, unitPriceMajor: e.target.value } : x) })} />
-          </div>
-        ))}
-        <button
-          className="text-xs font-semibold text-tf-green-dark"
-          onClick={() => set({ lines: [...form.lines, { description: "", quantity: "1", unit: "unit", unitPriceMajor: "0.00" }] })}
-        >
-          + Add line
-        </button>
-      </div>
-
-      <button
-        onClick={getDecision}
-        disabled={busy}
-        className="rounded-full bg-tf-green-strong px-5 py-3 text-sm font-semibold text-white disabled:opacity-50"
-      >
-        {busy ? "Checking…" : "Get VAT decision"}
-      </button>
-
-      {error ? <p className="text-sm text-tf-danger" role="alert">{error}</p> : null}
-
-      {decision ? (
-        <>
-          {decision.storageMode === "local" ? (
-            <p className="rounded-tf bg-tf-yellow-pale px-3 py-2 text-xs text-tf-amber">
-              Local demo persistence mode — data is not stored remotely.
-            </p>
-          ) : null}
-          <DecisionCard decision={decision.decision} citations={decision.citations} />
-
-          {decision.decision.status === "approved" ? (
-            <button
-              onClick={generate}
-              disabled={busy}
-              className="rounded-full bg-tf-green-strong px-5 py-3 text-sm font-semibold text-white disabled:opacity-50"
-            >
-              {busy ? "Generating…" : "Review & generate invoice"}
-            </button>
-          ) : (
-            <p className="rounded-tf border border-tf-divider p-3 text-sm text-tf-gray">
-              No invoice is generated for this case.{" "}
-              {decision.reviewCaseId ? (
-                <Link href="/review" className="font-semibold text-tf-green-dark underline">A review case was created.</Link>
-              ) : null}
-            </p>
-          )}
-        </>
-      ) : null}
-
-      {blocked ? (
-        <div className="rounded-tf-lg border border-red-200 bg-red-50 p-4 text-sm">
-          <p className="font-semibold text-tf-danger">Invoice blocked</p>
-          <p className="mt-1 text-tf-ink">{blocked.reason}</p>
-          {blocked.reviewCaseId ? (
-            <Link href="/review" className="mt-2 inline-block font-semibold text-tf-green-dark underline">
-              View review case
-            </Link>
-          ) : null}
-        </div>
-      ) : null}
-
-      {invoice ? (
-        <div className="rounded-tf-lg border border-tf-green/30 bg-tf-green-pale p-4">
-          <p className="font-semibold text-tf-green-dark">
-            {invoice.status === "issued" ? "Invoice ready" : "Invoice recorded (generation failed)"}
-          </p>
-          <p className="mt-1 text-sm">Number: <span className="font-mono">{invoice.invoiceNumber}</span></p>
-          {invoice.status === "issued" ? (
-            <div className="mt-3 flex gap-2">
-              <a href={`/api/invoices/${invoice.id}/pdf`} target="_blank" rel="noreferrer"
-                className="rounded-full bg-tf-green-strong px-4 py-2 text-sm font-semibold text-white">
-                Preview / download PDF
-              </a>
-              <Link href="/invoices" className="rounded-full border border-tf-divider px-4 py-2 text-sm font-semibold">
-                History
-              </Link>
-            </div>
-          ) : null}
-        </div>
-      ) : null}
     </div>
   );
 }

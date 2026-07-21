@@ -5,6 +5,8 @@
   "issuingAuthority": "Bundesministerium der Justiz (gesetze-im-internet.de)",
   "legalSection": "§ 13b (Steuerschuldnerschaft des Leistungsempfängers)",
   "topic": "reverse_charge",
+  "officialTitleEn": "VAT Act (UStG) §13b — Recipient as the person liable for the tax",
+  "excerptEn": "For certain services the recipient owes the VAT (reverse charge). For intra-Community general-rule B2B services the tax liability shifts to the business established in the other Member State (cf. Art. 196 VAT Directive).",
   "excerpt": "Für bestimmte sonstige Leistungen schuldet der Leistungsempfänger die Steuer (Reverse-Charge). Bei innergemeinschaftlichen B2B-Grundregelleistungen geht die Steuerschuld auf den im anderen Mitgliedstaat ansässigen Unternehmer über (vgl. Art. 196 MwStSystRL).",
   "url": "https://www.gesetze-im-internet.de/ustg_1980/__13b.html",
   "effectiveDate": "2010-01-01",
