@@ -54,6 +54,22 @@ export function agentResult(skill: string, action: string, summary: string): voi
   line("◀", skill, action, trunc(summary, 240));
 }
 
+/**
+ * Dump a structured object (e.g. the raw extraction result) for debugging.
+ * Dev-only trace; off in production. Not for secrets — the extraction object
+ * holds customer/invoice fields, no keys or auth headers.
+ */
+export function agentObject(skill: string, action: string, label: string, obj: unknown): void {
+  if (!enabled()) return;
+  let json: string;
+  try {
+    json = JSON.stringify(obj);
+  } catch {
+    json = String(obj);
+  }
+  console.log(`[agent] · ${skill} · ${action} — ${label}: ${json.length > 1500 ? json.slice(0, 1500) + "…" : json}`);
+}
+
 /** Skill attribution from the request (set by the client per call). */
 export function skillOf(req: Request): string {
   return req.headers.get("x-skill") ?? "assistant";

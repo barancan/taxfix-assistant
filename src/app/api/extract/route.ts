@@ -6,7 +6,7 @@ import { byokEnabled, createByokProvider, resolveServerProvider } from "@/ai";
 import { isModelAllowed, modelSupportsFiles } from "@/ai/models";
 import type { AiFile, ProviderName } from "@/ai/provider";
 import { makeError } from "@/ai/errors";
-import { agentModelQuery, agentModelResponse, skillOf } from "@/server/agent-log";
+import { agentModelQuery, agentModelResponse, agentObject, skillOf } from "@/server/agent-log";
 
 export const runtime = "nodejs";
 
@@ -108,8 +108,9 @@ export async function POST(req: Request) {
       skill,
       "extract",
       Date.now() - started,
-      `customer="${d.customerName ?? "?"}" (${d.customerCountryCode ?? "?"}${d.customerVatId ? `, VAT ${d.customerVatId}` : ""}), category=${d.suggestedCategory ?? "?"}, currency=${d.currency ?? "?"}, ${d.lineItems.length} line item(s)`,
+      `customer="${d.customerName ?? "?"}" (country=${d.customerCountryCode ?? "null"}${d.customerVatId ? `, VAT ${d.customerVatId}` : ""}), category=${d.suggestedCategory ?? "?"}, currency=${d.currency ?? "null"}, ${d.lineItems.length} line item(s)`,
     );
+    agentObject(skill, "extract", "extracted object", d);
   } else {
     agentModelResponse(skill, "extract", Date.now() - started, `failed: ${outcome.kind}`);
   }

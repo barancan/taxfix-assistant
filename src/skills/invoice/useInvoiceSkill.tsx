@@ -91,7 +91,14 @@ export function useInvoiceSkill(host: ChatHost): SkillBindings {
     setBusy(true);
     host.setTyping(true);
     try {
-      const res = await callExtract(text, file);
+      // Carry the original request into the company extraction so details the
+      // user already stated up front (e.g. "…a client in Switzerland") aren't
+      // lost — the company-details turn alone often omits the country.
+      const apiText =
+        kind === "company" && c.intent && c.intent.trim() !== text.trim()
+          ? `${c.intent}\n${text}`.trim()
+          : text;
+      const res = await callExtract(apiText, file);
       const data = await res.json();
       if (data?.ok === true) {
         const x = data.data as ExtractionResult;
