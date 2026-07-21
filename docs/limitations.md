@@ -22,5 +22,5 @@ genuine tax advice.
   user-confirmed and re-validated before it can affect a decision.
 - **Numbering.** Concurrency-safe within the single demo account (Postgres RPC /
   in-process counter). Not a real tenant numbering model.
-- **Node 20 vs Supabase.** `@supabase/supabase-js` prefers Node ≥ 22 (Vercel
-  default). Local dev on Node 20 uses the fallback unless Supabase env is set.
+- **Node 22 required.** The project targets Node 22 (`.nvmrc`, `engines`),
+  matching Vercel and `@supabase/supabase-js`. Use `nvm use` before installing.

@@ -25,6 +25,6 @@ persistence" banner is shown). To enable real persistence:
 
 ## Node version
 
-`@supabase/supabase-js` requests Node ≥ 22. Vercel's default runtime satisfies
-this; local dev on Node 20 only touches Supabase when the env vars are set
-(otherwise the local fallback is used).
+The project targets **Node 22** (`.nvmrc` = 22, `engines.node >= 22`), matching
+Vercel's default runtime and `@supabase/supabase-js`'s requirement. Run
+`nvm use` (or `nvm install 22`) before `npm install` / `npm run dev`.
