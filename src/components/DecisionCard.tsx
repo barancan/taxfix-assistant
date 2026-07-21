@@ -90,10 +90,22 @@ export function DecisionCard({
             {citations.map((c) => (
               <li key={c.sourceId} className="rounded-tf border border-tf-divider p-2">
                 <a href={c.url} target="_blank" rel="noreferrer" className="font-medium text-tf-green-dark underline">
-                  {c.title}
+                  {c.titleEn}
                 </a>
                 <p className="text-xs text-tf-gray">{c.section} · effective {c.effectiveDate}</p>
-                <p className="mt-1 text-xs text-tf-gray">{c.excerpt}</p>
+                <p className="mt-1 text-xs text-tf-gray">{c.excerptEn}</p>
+                {c.language === "de" ? (
+                  <details className="mt-1.5">
+                    <summary className="cursor-pointer text-xs font-medium text-tf-green-dark">
+                      View original (Deutsch)
+                    </summary>
+                    <p className="mt-1 text-xs font-medium text-tf-gray">{c.title}</p>
+                    <p className="text-xs text-tf-gray">{c.excerpt}</p>
+                    <a href={c.url} target="_blank" rel="noreferrer" className="mt-1 inline-block text-xs text-tf-green-dark underline">
+                      Open official source ↗
+                    </a>
+                  </details>
+                ) : null}
               </li>
             ))}
           </ul>

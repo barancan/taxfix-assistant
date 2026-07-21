@@ -5,6 +5,8 @@
   "issuingAuthority": "Bundesministerium der Justiz (gesetze-im-internet.de)",
   "legalSection": "§ 14 Abs. 4 (Pflichtangaben einer Rechnung)",
   "topic": "invoice_mandatory_fields",
+  "officialTitleEn": "VAT Act (UStG) §14 — Issuing of invoices",
+  "excerptEn": "An invoice must contain, among other things: the full name and address of the supplier and the recipient, the tax number or VAT ID, the date of issue, a sequential invoice number, the quantity and type of the supply, the time of supply, the net amount, and the tax rate and amount or a reference to a tax exemption.",
   "excerpt": "Eine Rechnung muss u. a. enthalten: vollständiger Name und Anschrift des leistenden Unternehmers und des Leistungsempfängers, die Steuernummer oder USt-IdNr., das Ausstellungsdatum, eine fortlaufende Rechnungsnummer, Menge/Art der Leistung, den Zeitpunkt der Leistung, das Entgelt, den Steuersatz und Steuerbetrag bzw. einen Hinweis auf eine Steuerbefreiung.",
   "url": "https://www.gesetze-im-internet.de/ustg_1980/__14.html",
   "effectiveDate": "2004-01-01",

@@ -17,15 +17,29 @@ export default function HomePage() {
 
       <Link
         href="/assistant"
-        className="flex flex-col gap-1 rounded-tf-lg bg-tf-green-pale p-5 ring-1 ring-tf-green/20 transition active:scale-[0.99]"
+        className="group relative flex min-h-44 flex-col justify-between overflow-hidden rounded-tf-lg bg-tf-green-pale p-5 ring-1 ring-tf-green/20 transition active:scale-[0.99]"
       >
-        <span className="text-lg font-bold text-tf-ink">Ask the Assistant</span>
-        <span className="text-sm text-tf-gray">
-          “I need to invoice a client in the US for 12,000 USD.”
-        </span>
-        <span className="mt-2 inline-flex w-fit rounded-full bg-tf-green-strong px-4 py-2 text-sm font-semibold text-white">
-          Start
-        </span>
+        <div>
+          <span className="inline-flex items-center gap-1 rounded-full bg-tf-surface/70 px-2.5 py-1 text-xs font-semibold text-tf-green-dark">
+            ✨ AI Tax Assistant
+          </span>
+          <h2 className="mt-3 text-2xl font-extrabold leading-tight tracking-tight text-tf-ink">
+            Invoice a client in minutes
+          </h2>
+          <p className="mt-1.5 text-sm text-tf-gray">
+            Tell me who you’re billing — I’ll pick the right VAT treatment, cite the
+            law, and build a compliant PDF.
+          </p>
+        </div>
+        <div className="mt-4 flex items-center justify-between">
+          <span className="text-sm font-semibold text-tf-green-dark">Start a conversation</span>
+          <span
+            aria-hidden
+            className="flex h-12 w-12 items-center justify-center rounded-full bg-tf-green-strong text-xl text-white shadow-sm transition group-active:scale-95"
+          >
+            →
+          </span>
+        </div>
       </Link>
 
       <section className="grid grid-cols-2 gap-3">

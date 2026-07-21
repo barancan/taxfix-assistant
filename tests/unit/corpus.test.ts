@@ -8,6 +8,9 @@ describe("official source corpus", () => {
     for (const s of CORPUS) {
       expect(s.verificationStatus).toBe("verified");
       expect(s.url).toMatch(/^https:\/\//);
+      // Every source must carry a controlled English translation for the UI.
+      expect(s.officialTitleEn.length).toBeGreaterThan(0);
+      expect(s.excerptEn.length).toBeGreaterThan(0);
     }
   });
 

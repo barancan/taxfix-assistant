@@ -5,6 +5,8 @@
   "issuingAuthority": "European Central Bank (ECB)",
   "legalSection": "EXR dataflow, series D.<CCY>.EUR.SP00.A",
   "topic": "exchange_rate_reference",
+  "officialTitleEn": "ECB euro foreign-exchange reference rates (Data Portal API, EXR dataflow)",
+  "excerptEn": "The ECB publishes daily euro foreign-exchange reference rates (around 16:00 CET on TARGET business days). The Data Portal REST API serves the EXR dataflow, e.g. /service/data/EXR/D.USD.EUR.SP00.A. Rates are units of foreign currency per 1 EUR; the EUR value of a foreign amount is amount / rate.",
   "excerpt": "The ECB publishes daily euro foreign exchange reference rates (around 16:00 CET on TARGET business days). The Data Portal REST API serves the EXR dataflow, e.g. /service/data/EXR/D.USD.EUR.SP00.A. Rates are expressed as units of foreign currency per 1 EUR; the EUR value of a foreign amount is amount / rate.",
   "url": "https://data.ecb.europa.eu/help/api/data",
   "effectiveDate": "1999-01-01",

@@ -5,6 +5,8 @@
   "issuingAuthority": "Bundesministerium der Justiz (gesetze-im-internet.de)",
   "legalSection": "§ 3a Abs. 2 (B2B-Grundregel); Abs. 3 (Ausnahmen)",
   "topic": "place_of_supply_services",
+  "officialTitleEn": "VAT Act (UStG) §3a — Place of supply of services",
+  "excerptEn": "A service supplied to a business for its enterprise is, subject to paragraphs 3 to 8, supplied at the place from which the recipient operates its business (the general B2B rule). Paragraph 3 lists exceptions (e.g. services connected with real property, admission to events).",
   "excerpt": "Eine sonstige Leistung, die an einen Unternehmer für dessen Unternehmen ausgeführt wird, wird vorbehaltlich der Absätze 3 bis 8 an dem Ort ausgeführt, von dem aus der Empfänger sein Unternehmen betreibt. Absatz 3 nennt Ausnahmen (u. a. Grundstücksleistungen, Eintrittsberechtigungen zu Veranstaltungen).",
   "url": "https://www.gesetze-im-internet.de/ustg_1980/__3a.html",
   "effectiveDate": "2010-01-01",
