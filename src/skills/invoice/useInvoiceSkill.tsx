@@ -244,9 +244,44 @@ export function useInvoiceSkill(host: ChatHost): SkillBindings {
     setStep("company_confirm");
   }
 
+  /**
+   * Extract every available field from the opening request so the user isn't
+   * re-asked for details they already gave. Prefills company + line items and
+   * jumps to the confirmation card when a customer was found.
+   */
+  async function extractFromIntent(text: string) {
+    host.setTyping(true);
+    try {
+      const res = await callExtract(text, null);
+      const data = await res.json();
+      if (data?.ok === true) {
+        const x = data.data as ExtractionResult;
+        const lines = extractionLines(x);
+        patch({ ...applyExtraction(x), ...(lines.length ? { lines } : {}) });
+        const gotCompany = Boolean(x.customerName);
+        host.say(gotCompany ? "Great — here's what I picked up. Please confirm the details." : "Got it. Who are you invoicing?");
+        setStep(gotCompany ? "company_confirm" : "company_ask");
+      } else if (data?.ok === false && data.byokRecoverable) {
+        host.byok.open(
+          data.noServerKey ? "No AI key is configured on the server. Add your own to use AI extraction." : data.userMessage,
+          () => extractFromIntent(text),
+        );
+      } else {
+        host.say(SCRIPT.company_ask!);
+        setStep("company_ask");
+      }
+    } catch {
+      host.say(SCRIPT.company_ask!);
+      setStep("company_ask");
+    } finally {
+      host.setTyping(false);
+    }
+  }
+
   async function onInput(text: string) {
     if (step === "intent") {
       host.youSaid(text);
+      patch({ intent: text });
       setBusy(true);
       try {
         // Route first: generic questions get a light, cited (or escalated)
@@ -256,9 +291,14 @@ export function useInvoiceSkill(host: ChatHost): SkillBindings {
           host.say("Anything else? When you're ready, tell me about the invoice you need.");
           return;
         }
-        patch({ intent: text });
-        host.say(SCRIPT.company_ask!);
-        setStep("company_ask");
+        if (outcome === "unavailable") {
+          // No AI — fall back to the manual company step.
+          host.say(SCRIPT.company_ask!);
+          setStep("company_ask");
+          return;
+        }
+        // Invoice intent → pull everything already provided, then confirm.
+        await extractFromIntent(text);
       } finally {
         setBusy(false);
       }
