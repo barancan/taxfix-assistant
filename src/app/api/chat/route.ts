@@ -6,6 +6,7 @@ import { isModelAllowed } from "@/ai/models";
 import { chatSystemPrompt } from "@/ai/prompts";
 import { makeError } from "@/ai/errors";
 import type { ProviderName } from "@/ai/provider";
+import { agentModelQuery, agentModelResponse, skillOf } from "@/server/agent-log";
 
 export const runtime = "nodejs";
 
@@ -49,6 +50,16 @@ export async function POST(req: Request) {
     return NextResponse.json({ ...makeError("insufficient_credits"), noServerKey: true }, { status: 200 });
   }
 
+  const skill = skillOf(req);
+  const lastUser = [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
+  agentModelQuery(skill, "chat", provider.name, provider.model, `${lastUser} (${messages.length} turn(s) of history)`);
+  const started = Date.now();
   const outcome = await provider.chat(chatSystemPrompt(context), messages);
+  agentModelResponse(
+    skill,
+    "chat",
+    Date.now() - started,
+    outcome.ok ? `"${outcome.text}"` : `failed: ${outcome.kind}`,
+  );
   return NextResponse.json(outcome, { status: 200 });
 }
