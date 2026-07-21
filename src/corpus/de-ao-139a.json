@@ -1,0 +1,18 @@
+{
+  "sourceId": "de-ao-139a",
+  "jurisdiction": "DE",
+  "officialTitle": "Abgabenordnung (AO) § 139a — Identifikationsmerkmal (Steuer-Identifikationsnummer)",
+  "officialTitleEn": "Fiscal Code (AO) §139a — Tax identification number (Steuer-ID)",
+  "issuingAuthority": "Bundesministerium der Justiz (gesetze-im-internet.de)",
+  "legalSection": "§ 139a Abs. 1",
+  "topic": "tax_identifiers",
+  "excerpt": "Das Bundeszentralamt für Steuern teilt jedem Steuerpflichtigen zum Zwecke der eindeutigen Identifizierung in Besteuerungsverfahren ein einheitliches und dauerhaftes Merkmal (Identifikationsmerkmal) zu. Für natürliche Personen ist dies die Identifikationsnummer (Steuer-Identifikationsnummer), für wirtschaftlich Tätige die Wirtschafts-Identifikationsnummer. Das Merkmal darf nicht aus anderen Daten abgeleitet werden.",
+  "excerptEn": "The Federal Central Tax Office (BZSt) assigns every taxpayer a single, permanent identifier for unambiguous identification in tax procedures. For natural persons this is the tax identification number (Steuer-ID); for economic actors it is the business identification number (Wirtschafts-IdNr.). The identifier may not be derived from other data.",
+  "url": "https://www.gesetze-im-internet.de/ao_1977/__139a.html",
+  "effectiveDate": "2008-01-01",
+  "retrievedDate": "2026-07-21",
+  "supersededDate": null,
+  "supportedRuleIds": ["KB"],
+  "language": "de",
+  "verificationStatus": "verified"
+}

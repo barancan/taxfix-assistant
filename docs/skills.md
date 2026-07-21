@@ -51,17 +51,31 @@ the LLM only extracts and phrases; legally material facts are confirmed by the
 user via cards; decisions come only from deterministic server services; fail
 closed.
 
-## General questions (host-level)
+## General questions (host-level, retrieval-grounded)
 
 Free text that isn't skill intent is routed through the structured answer
-endpoint (`/api/chat`): the model classifies the turn and may answer **lightly**.
-Citation rules still apply — it can only *select* source ids from the closed
-committed-corpus allowlist, and the server drops anything unknown, so citations
-are never invented. Display is gated by `ANSWER_CONFIDENCE_THRESHOLD` (env,
-default 0.65): below it the answer is suppressed and the subject is **raised to
-a human** as a review case. Model self-confidence only ever suppresses general
-answers; it never feeds tax decisions. Each query logs
-`confidence=… ≥/< threshold=…` to the agent trace.
+endpoint (`/api/chat`). The flow is **retrieval-grounded**:
+
+1. **Retrieve** — lexical retrieval (`src/domain/knowledge/retrieve.ts`, no vector
+   DB) over the curated knowledge base (`src/knowledge/entries.json`) returns the
+   most relevant entries for the question.
+2. **Ground** — the retrieved entries' text + their citation ids become the model's
+   grounding; it may answer ONLY from that material and cite ONLY those ids.
+3. **Gate** — the answer is shown only when it is **grounded**
+   (`topScore ≥ KNOWLEDGE_RELEVANCE_MIN`, default 0.15) **and** the model is
+   confident enough (`≥ ANSWER_CONFIDENCE_THRESHOLD`, default 0.65) **and** it
+   produced a valid citation. Otherwise it is suppressed and the subject is
+   **raised to a human** (review case).
+
+**Knowledge base** (`src/knowledge/entries.json`, versioned + `check:knowledge`):
+every entry is curated and cites official corpus sources (which back the shown
+citations); scope is `explained` or `general_guidance`. Adding coverage = adding
+an entry (+ any new official source under `src/corpus/`) — no code change.
+
+Citations are never invented (the server drops any id not in the committed
+corpus). Model self-confidence only ever *suppresses* general answers; it never
+feeds tax decisions. Each query logs `retrieved […] grounded=… confidence=… ≥/<
+threshold=…` to the agent trace.
 
 ## Agent trace
 

@@ -7,6 +7,7 @@ import { byokEnabled, createByokProvider, resolveServerProvider } from "@/ai";
 import { isModelAllowed } from "@/ai/models";
 import { answerSystemPrompt, passesThreshold, sanitizeAnswer } from "@/ai/answer";
 import { getCitations } from "@/domain/corpus";
+import { retrieve } from "@/domain/knowledge/retrieve";
 import { makeError } from "@/ai/errors";
 import type { ProviderName } from "@/ai/provider";
 import { agentModelQuery, agentModelResponse, skillOf } from "@/server/agent-log";
@@ -61,11 +62,27 @@ export async function POST(req: Request) {
 
   const skill = skillOf(req);
   const threshold = env.ANSWER_CONFIDENCE_THRESHOLD;
+  const relevanceMin = env.KNOWLEDGE_RELEVANCE_MIN;
   const lastUser = [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
-  agentModelQuery(skill, "answer", provider.name, provider.model, `${lastUser} (${messages.length} turn(s), threshold=${threshold})`);
+
+  // Retrieve grounding from the curated knowledge base before calling the model.
+  const hits = retrieve(lastUser, 3);
+  const qualifying = hits.filter((h) => h.score >= relevanceMin);
+  const grounding = qualifying
+    .map(
+      (h) =>
+        `- ${h.entry.topic}${h.entry.scope === "general_guidance" ? " (scope: general guidance)" : ""} (cite: ${h.entry.sourceIds.join(", ")})\n  ${h.entry.answerEn}`,
+    )
+    .join("\n\n");
+  const retrievedNote = hits.length
+    ? `retrieved [${hits.map((h) => `${h.entry.entryId}(${h.score.toFixed(2)})`).join(", ")}] min=${relevanceMin}`
+    : `retrieved [] min=${relevanceMin}`;
+  const grounded = qualifying.length > 0;
+
+  agentModelQuery(skill, "answer", provider.name, provider.model, `${lastUser} — ${retrievedNote}, threshold=${threshold}`);
 
   const started = Date.now();
-  const outcome = await provider.answer(answerSystemPrompt(context), messages);
+  const outcome = await provider.answer(answerSystemPrompt(grounding, context), messages);
   const ms = Date.now() - started;
 
   if (!outcome.ok) {
@@ -94,12 +111,19 @@ export async function POST(req: Request) {
   }
 
   const citations = getCitations(a.relatedSourceIds);
+  // Show the answer only when it is grounded in the knowledge base AND the model
+  // is confident enough AND it produced a valid citation. Otherwise raise to a human.
+  const show = grounded && passesThreshold(a.confidence, threshold) && citations.length >= 1;
 
-  if (!passesThreshold(a.confidence, threshold)) {
-    // Raise the subject to a human: suppress the answer, create a review case.
+  if (!show) {
+    const reason = !grounded
+      ? "not grounded in the knowledge base"
+      : citations.length < 1
+        ? "no valid citation"
+        : `below confidence threshold (${a.confidence.toFixed(2)} < ${threshold})`;
     const review = await getStorage().createReviewCase({
       sessionId,
-      reason: `General question below confidence threshold (${a.confidence.toFixed(2)} < ${threshold})`,
+      reason: `General question ${reason}`,
       decisionCode: "GENERAL_QUESTION",
       customerName: "—",
       missingFacts: [],
@@ -110,7 +134,7 @@ export async function POST(req: Request) {
       skill,
       "answer",
       ms,
-      `kind=question confidence=${a.confidence.toFixed(2)} < threshold=${threshold} → escalated to human (review case created)`,
+      `kind=question grounded=${grounded ? "yes" : "no"} confidence=${a.confidence.toFixed(2)} (threshold=${threshold}) → escalated to human — ${reason} (review case created)`,
     );
     return NextResponse.json({
       ok: true,
@@ -127,7 +151,7 @@ export async function POST(req: Request) {
     skill,
     "answer",
     ms,
-    `kind=question confidence=${a.confidence.toFixed(2)} ≥ threshold=${threshold} → answering (${citations.length} sources): "${a.answer}"`,
+    `kind=question grounded=yes confidence=${a.confidence.toFixed(2)} ≥ threshold=${threshold} → answering (${citations.length} sources): "${a.answer}"`,
   );
   return NextResponse.json({
     ok: true,

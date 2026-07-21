@@ -32,6 +32,13 @@ const EnvSchema = z.object({
    */
   ANSWER_CONFIDENCE_THRESHOLD: z.coerce.number().min(0).max(1).default(0.65),
 
+  /**
+   * Minimum lexical-retrieval relevance [0..1] for a general question to be
+   * considered "grounded" in the knowledge base. Below it (or with no matching
+   * entry) the question is raised to a human instead of answered.
+   */
+  KNOWLEDGE_RELEVANCE_MIN: z.coerce.number().min(0).max(1).default(0.15),
+
   SUPABASE_URL: z.string().url().optional().or(z.literal("").transform(() => undefined)),
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
   SUPABASE_STORAGE_BUCKET: z.string().default("invoices"),

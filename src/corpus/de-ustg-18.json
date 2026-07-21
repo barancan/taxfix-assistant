@@ -1,0 +1,18 @@
+{
+  "sourceId": "de-ustg-18",
+  "jurisdiction": "DE",
+  "officialTitle": "Umsatzsteuergesetz (UStG) § 18 — Besteuerungsverfahren (Voranmeldung)",
+  "officialTitleEn": "VAT Act (UStG) §18 — Assessment procedure (advance VAT returns)",
+  "issuingAuthority": "Bundesministerium der Justiz (gesetze-im-internet.de)",
+  "legalSection": "§ 18 Abs. 1–2 (Voranmeldungszeitraum)",
+  "topic": "vat_return_cadence",
+  "excerpt": "Der Unternehmer hat bis zum zehnten Tag nach Ablauf jedes Voranmeldungszeitraums eine Umsatzsteuer-Voranmeldung zu übermitteln und die Vorauszahlung selbst zu berechnen. Voranmeldungszeitraum ist grundsätzlich das Kalendervierteljahr; beträgt die Steuer des Vorjahres mehr als 9.000 Euro, der Kalendermonat; bei nicht mehr als 2.000 Euro kann das Finanzamt von der Abgabe befreien. Im Jahr der Gründung und im Folgejahr ist der Kalendermonat maßgebend.",
+  "excerptEn": "Businesses must file a VAT advance return (Umsatzsteuer-Voranmeldung) by the 10th day after each return period and self-calculate the payment. The period is normally the calendar quarter; the calendar month if the prior year's tax exceeded EUR 9,000; the tax office may waive filing if it was EUR 2,000 or less. In the year of founding and the following year the monthly period applies.",
+  "url": "https://www.gesetze-im-internet.de/ustg_1980/__18.html",
+  "effectiveDate": "2025-01-01",
+  "retrievedDate": "2026-07-21",
+  "supersededDate": null,
+  "supportedRuleIds": ["KB"],
+  "language": "de",
+  "verificationStatus": "verified"
+}

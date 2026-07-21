@@ -1,0 +1,172 @@
+{
+  "version": "2026-07-21.1",
+  "entries": [
+    {
+      "entryId": "kleinunternehmer",
+      "topic": "Kleinunternehmer scheme (§19 UStG)",
+      "titleEn": "What the Kleinunternehmer (small business) scheme means",
+      "keywords": ["kleinunternehmer", "small business", "19", "ustg", "vat exempt", "steuerbefreiung", "threshold", "25000", "100000", "no vat", "umsatzsteuer"],
+      "questionExamples": [
+        "what can I do as a Kleinunternehmer",
+        "explain the small business scheme",
+        "do I charge VAT as a Kleinunternehmer",
+        "what are the Kleinunternehmer turnover limits"
+      ],
+      "answerEn": "As a Kleinunternehmer under §19 UStG your sales are VAT-exempt: you don't charge VAT on your invoices and can't deduct input VAT. It applies if your net turnover stayed under €25,000 in the previous calendar year and doesn't exceed €100,000 in the current one (rules in force since 2025). Your invoices must note the exemption (a plain-language reference is enough), and you still file an annual income-tax return. For whether it's the right choice for your situation, a Taxfix tax expert can advise.",
+      "sourceIds": ["de-ustg-19", "de-bmf-kleinunternehmer-2025", "de-ustg-14"],
+      "scope": "explained",
+      "verificationStatus": "verified"
+    },
+    {
+      "entryId": "reverse-charge",
+      "topic": "Reverse charge (intra-EU B2B)",
+      "titleEn": "What reverse charge means on an invoice",
+      "keywords": ["reverse charge", "steuerschuldnerschaft", "13b", "14a", "eu", "b2b", "recipient", "vat liability", "cross-border", "intra-community"],
+      "questionExamples": [
+        "what does reverse charge mean",
+        "why is there no VAT on my EU invoice",
+        "reverse charge wording on invoice"
+      ],
+      "answerEn": "Reverse charge means the recipient — not you — accounts for the VAT. For a general B2B service to a business in another EU country, the place of supply is the customer's country (§3a(2) UStG), so you invoice without German VAT and add the wording “Steuerschuldnerschaft des Leistungsempfängers” (reverse charge, §13b/§14a UStG), showing both parties' VAT IDs. You then usually report it in a recapitulative statement (Zusammenfassende Meldung).",
+      "sourceIds": ["de-ustg-3a", "de-ustg-13b", "de-ustg-14a", "de-ustg-18a"],
+      "scope": "explained",
+      "verificationStatus": "verified"
+    },
+    {
+      "entryId": "recapitulative-statement",
+      "topic": "Recapitulative statement (ZM, §18a UStG)",
+      "titleEn": "What the Zusammenfassende Meldung (ZM) is",
+      "keywords": ["zusammenfassende meldung", "zm", "recapitulative", "18a", "ec sales", "eu report", "reporting"],
+      "questionExamples": [
+        "what is the Zusammenfassende Meldung",
+        "do I have to report EU sales",
+        "what is a ZM report"
+      ],
+      "answerEn": "The Zusammenfassende Meldung (ZM, §18a UStG) is a periodic report you file for intra-EU B2B services where the recipient owes the VAT under reverse charge. It lists each customer's VAT ID and the amount, and is filed electronically via ELSTER separately from your VAT return.",
+      "sourceIds": ["de-ustg-18a", "de-elster"],
+      "scope": "explained",
+      "verificationStatus": "verified"
+    },
+    {
+      "entryId": "invoice-fields",
+      "topic": "Mandatory invoice contents (§14 UStG)",
+      "titleEn": "What must appear on a German invoice",
+      "keywords": ["invoice", "mandatory", "fields", "14", "rechnung", "pflichtangaben", "invoice number", "requirements", "what must an invoice contain"],
+      "questionExamples": [
+        "what must a German invoice contain",
+        "mandatory invoice fields",
+        "what info goes on an invoice"
+      ],
+      "answerEn": "Under §14 UStG an invoice must show: your full name and address and the customer's; your tax number or VAT ID; the issue date; a sequential invoice number; the quantity and type of the service; the time of supply; the net amount; and the VAT rate and amount — or a reference to the exemption if none is charged (e.g. Kleinunternehmer or reverse charge).",
+      "sourceIds": ["de-ustg-14"],
+      "scope": "explained",
+      "verificationStatus": "verified"
+    },
+    {
+      "entryId": "standard-vat-rate",
+      "topic": "German VAT rate (§12 UStG)",
+      "titleEn": "The German standard VAT rate",
+      "keywords": ["vat rate", "19", "12", "umsatzsteuer", "mehrwertsteuer", "standard rate", "how much vat", "percent"],
+      "questionExamples": [
+        "what is the German VAT rate",
+        "how much VAT do I charge",
+        "standard VAT percentage"
+      ],
+      "answerEn": "The German standard VAT rate is 19% of the net amount (§12(1) UStG), which applies to ordinary professional services. A reduced 7% rate exists for specific categories that this prototype doesn't cover. Whether a reduced rate or exemption applies to your specific service is best confirmed with a tax expert.",
+      "sourceIds": ["de-ustg-12"],
+      "scope": "explained",
+      "verificationStatus": "verified"
+    },
+    {
+      "entryId": "tax-identifiers",
+      "topic": "Tax number vs VAT ID vs Steuer-ID",
+      "titleEn": "The different German tax numbers explained",
+      "keywords": ["tax number", "steuernummer", "vat id", "ust-idnr", "umsatzsteuer-identifikationsnummer", "steuer-id", "identifikationsnummer", "139a", "bzst", "difference", "identifiers"],
+      "questionExamples": [
+        "difference between tax number and VAT ID",
+        "what is my Steuer-ID",
+        "tax number vs VAT ID",
+        "which number goes on my invoice"
+      ],
+      "answerEn": "There are three different numbers. The Steuer-Identifikationsnummer (Steuer-ID) is your lifelong personal tax id, assigned by the BZSt (§139a AO). The Steuernummer is issued by your local tax office for your business filings. The USt-IdNr. (VAT ID) is a separate number from the BZSt for intra-EU trade. On invoices you show your tax number or VAT ID; the VAT ID is required for EU B2B reverse-charge invoices.",
+      "sourceIds": ["de-ao-139a", "de-bzst-ustidnr", "de-ustg-14"],
+      "scope": "explained",
+      "verificationStatus": "verified"
+    },
+    {
+      "entryId": "vat-id-how-to-get",
+      "topic": "Getting a VAT ID (USt-IdNr.)",
+      "titleEn": "How to get a German VAT ID",
+      "keywords": ["vat id", "ust-idnr", "apply", "beantragen", "bzst", "how to get", "vergabe", "eu trade"],
+      "questionExamples": [
+        "how do I get a VAT ID",
+        "where do I apply for a USt-IdNr",
+        "do I need a VAT ID"
+      ],
+      "answerEn": "The USt-IdNr. (VAT ID) is issued by the Bundeszentralamt für Steuern (BZSt), separately from your tax number. You need it if you trade goods or services B2B within the EU. You can request it online at the BZSt or, for a new business, directly on the tax registration questionnaire; it is issued only after your VAT registration at the tax office and sent by post.",
+      "sourceIds": ["de-bzst-ustidnr", "de-ustg-14a"],
+      "scope": "explained",
+      "verificationStatus": "verified"
+    },
+    {
+      "entryId": "freelancer-registration",
+      "topic": "Registering as a freelancer (§138 AO)",
+      "titleEn": "How to register a freelance activity",
+      "keywords": ["register", "registration", "freelancer", "fragebogen", "steuerliche erfassung", "138", "anmeldung", "start freelancing", "finanzamt", "anzeige"],
+      "questionExamples": [
+        "how do I register as a freelancer",
+        "how do I start freelancing in Germany",
+        "what is the Fragebogen zur steuerlichen Erfassung"
+      ],
+      "answerEn": "When you start a self-employed/freelance activity you must notify the competent tax office within one month (§138 AO) — commercial businesses notify the municipality (Gewerbeanmeldung) instead. You do this through the “Fragebogen zur steuerlichen Erfassung” (tax registration questionnaire), submitted via ELSTER. Based on it, the tax office issues your Steuernummer and sets your VAT obligations. For which category fits your activity, a tax expert can help.",
+      "sourceIds": ["de-ao-138", "de-elster"],
+      "scope": "explained",
+      "verificationStatus": "verified"
+    },
+    {
+      "entryId": "elster",
+      "topic": "ELSTER (online tax office)",
+      "titleEn": "What ELSTER is and what it's for",
+      "keywords": ["elster", "mein elster", "online", "submit", "electronic", "filing", "steuererklärung", "voranmeldung", "portal"],
+      "questionExamples": [
+        "what is ELSTER",
+        "how do I file taxes online",
+        "how do I submit a VAT return"
+      ],
+      "answerEn": "ELSTER (Mein ELSTER) is the German tax administration's free online portal for submitting tax returns and VAT advance returns electronically and authenticated. Freelancers use it to file the registration questionnaire, monthly/quarterly VAT advance returns, the recapitulative statement, and annual returns. You need a free ELSTER user account (certificate) to sign in.",
+      "sourceIds": ["de-elster", "de-ustg-18"],
+      "scope": "explained",
+      "verificationStatus": "verified"
+    },
+    {
+      "entryId": "vat-return-cadence",
+      "topic": "VAT advance returns (§18 UStG)",
+      "titleEn": "How often you file VAT returns",
+      "keywords": ["voranmeldung", "vat return", "18", "monthly", "quarterly", "how often", "advance return", "umsatzsteuer-voranmeldung", "deadline", "cadence", "frequency"],
+      "questionExamples": [
+        "how often do I file VAT returns",
+        "monthly or quarterly VAT",
+        "when is my VAT return due"
+      ],
+      "answerEn": "VAT advance returns (Voranmeldungen) are filed via ELSTER by the 10th day after each period (§18 UStG). The period is quarterly by default, monthly if last year's VAT was over €9,000, and the tax office may waive filing if it was €2,000 or less; new businesses file monthly in the founding year and the next. For your exact schedule and dates, check your tax office notice or ask a tax expert.",
+      "sourceIds": ["de-ustg-18", "de-elster"],
+      "scope": "general_guidance",
+      "verificationStatus": "verified"
+    },
+    {
+      "entryId": "income-tax-vs-vat",
+      "topic": "Income tax vs VAT",
+      "titleEn": "The difference between income tax and VAT",
+      "keywords": ["income tax", "einkommensteuer", "vat", "umsatzsteuer", "difference", "profit", "two taxes", "which tax"],
+      "questionExamples": [
+        "difference between income tax and VAT",
+        "do I pay income tax and VAT",
+        "how are freelancers taxed"
+      ],
+      "answerEn": "They're two separate things. VAT (Umsatzsteuer) is a tax you collect on your sales and pass to the tax office via advance returns — it doesn't reduce your income. Income tax (Einkommensteuer) is charged on your annual profit (income minus expenses) via your income-tax return. This prototype focuses on VAT/invoicing; for your income-tax position and amounts, a Taxfix tax expert can help.",
+      "sourceIds": ["de-ustg-18"],
+      "scope": "general_guidance",
+      "verificationStatus": "verified"
+    }
+  ]
+}

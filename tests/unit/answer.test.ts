@@ -30,11 +30,18 @@ describe("structured answer sanitization & gate", () => {
     expect(passesThreshold(0.9, 0.65)).toBe(true);
   });
 
-  it("system prompt embeds the closed citation allowlist and confidence rules", () => {
-    const p = answerSystemPrompt();
-    expect(p).toContain("de-ustg-3a");
+  it("system prompt embeds the retrieved grounding and citation/confidence rules", () => {
+    const grounding = "- Kleinunternehmer scheme (cite: de-ustg-19)\n  Small business exemption…";
+    const p = answerSystemPrompt(grounding);
     expect(p).toContain("de-ustg-19");
+    expect(p).toContain("answer ONLY from this material");
     expect(p).toContain("NEVER invent a source");
     expect(p).toContain("confidence");
+  });
+
+  it("system prompt defers when no grounding was retrieved", () => {
+    const p = answerSystemPrompt("");
+    expect(p).toContain("No official grounding was retrieved");
+    expect(p).toContain("confidence below 0.4");
   });
 });

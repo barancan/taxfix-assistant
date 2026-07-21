@@ -1,0 +1,18 @@
+{
+  "sourceId": "de-elster",
+  "jurisdiction": "DE",
+  "officialTitle": "ELSTER — Elektronische Steuererklärung (Online-Finanzamt)",
+  "officialTitleEn": "ELSTER — Electronic tax filing (online tax office)",
+  "issuingAuthority": "Steuerverwaltung von Bund und Ländern (ELSTER)",
+  "legalSection": "Mein ELSTER — Online-Finanzamt",
+  "topic": "elster_filing",
+  "excerpt": "ELSTER (ELektronische STeuerERklärung) ist das Online-Finanzamt der deutschen Steuerverwaltung. Über „Mein ELSTER“ können Unternehmer und Privatpersonen Steuererklärungen und Umsatzsteuer-Voranmeldungen elektronisch und authentifiziert übermitteln. Für die Nutzung ist ein kostenloses Benutzerkonto erforderlich.",
+  "excerptEn": "ELSTER (ELektronische STeuerERklärung) is the online tax office of the German tax administration. Through „Mein ELSTER“, businesses and individuals can submit tax returns and VAT advance returns electronically and authenticated. A free user account is required to use it.",
+  "url": "https://www.elster.de/eportal/start",
+  "effectiveDate": "2011-01-01",
+  "retrievedDate": "2026-07-21",
+  "supersededDate": null,
+  "supportedRuleIds": ["KB"],
+  "language": "de",
+  "verificationStatus": "verified"
+}

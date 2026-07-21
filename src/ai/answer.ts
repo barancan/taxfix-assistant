@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { CORPUS, getSource, type Citation } from "@/domain/corpus";
+import { getSource, type Citation } from "@/domain/corpus";
 import { ASSISTANT_CHAT_SYSTEM_PROMPT } from "./prompts";
 
 /**
@@ -53,12 +53,20 @@ export const ANSWER_JSON_SCHEMA = {
   required: ["kind", "answer", "confidence", "relatedSourceIds"],
 } as const;
 
-/** The closed citation allowlist shown to the model. */
-function corpusAllowlist(): string {
-  return CORPUS.map((s) => `- ${s.sourceId} — ${s.officialTitleEn} (${s.topic})`).join("\n");
-}
+/**
+ * Build the answer prompt around retrieved grounding. The model may answer ONLY
+ * from the grounding and may cite ONLY the source ids listed there — so answers
+ * are grounded in curated, official-source-backed material rather than the
+ * model's free memory. When nothing is retrieved it must defer (low confidence).
+ */
+export function answerSystemPrompt(grounding: string, context?: string): string {
+  const groundingBlock = grounding.trim()
+    ? `Grounding (authoritative — answer ONLY from this material, and cite ONLY the source ids listed here):
+${grounding.trim()}
 
-export function answerSystemPrompt(context?: string): string {
+If the grounding does not actually cover the user's question, do NOT answer from your own knowledge — set confidence below 0.4 and relatedSourceIds [].`
+    : `No official grounding was retrieved for this message. If it is a general question you cannot answer from official sources, set confidence below 0.4 and relatedSourceIds [] (a human expert will take it).`;
+
   const base = `${ASSISTANT_CHAT_SYSTEM_PROMPT}
 
 Classify the user's latest message and respond via the structured schema:
@@ -66,15 +74,13 @@ Classify the user's latest message and respond via the structured schema:
 - kind="question" for general questions; answer briefly (2–4 sentences, plain English).
 - kind="other" for greetings/small talk; reply warmly and briefly.
 
-Citation rules (strict):
-- You may reference official sources ONLY by id, chosen from this closed list:
-${corpusAllowlist()}
-- Return [] when none clearly apply. NEVER invent a source, section, date, or id.
+${groundingBlock}
+
+Citation rules (strict): NEVER invent a source, section, date, or id. Use only ids present in the grounding above.
 
 Confidence rules:
 - confidence is your honest 0..1 estimate of the answer's reliability for this user.
-- Be LOW (< 0.5) for anything deadline-specific, amount-specific, case-specific, or
-  outside the sources above (e.g. income-tax filing deadlines are NOT covered by them).
+- Be LOW (< 0.5) for anything deadline-specific, amount-specific, case-specific, or not covered by the grounding.
 - Personal tax outcomes always warrant low confidence — a human expert should take those.`;
   return context ? `${base}\n\nSession context (reference only): ${context}` : base;
 }
