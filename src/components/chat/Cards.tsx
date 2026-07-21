@@ -5,6 +5,7 @@ import type { Collected } from "@/lib/facts";
 import { CATEGORIES, CURRENCIES } from "@/lib/conversation";
 import { COUNTRY_OPTIONS, regionForCountry } from "@/lib/regions";
 import { DecisionCard } from "@/components/DecisionCard";
+import { PdfPreview } from "@/components/PdfPreview";
 import type { DecisionResult } from "@/domain/schemas";
 import type { Citation } from "@/domain/corpus";
 import type { ProviderName } from "@/ai/provider";
@@ -137,23 +138,20 @@ export function InvoiceReadyCard({ id, invoiceNumber, status }: { id: string; in
       <p className="mt-1 text-sm">Number: <span className="font-mono">{invoiceNumber}</span></p>
 
       {/* Inline PDF preview — the whole thumbnail opens the full PDF in a new tab. */}
-      <a
-        href={pdfUrl}
-        target="_blank"
-        rel="noreferrer"
-        aria-label={`Open invoice ${invoiceNumber} PDF in a new tab`}
-        className="group relative mt-3 block overflow-hidden rounded-tf border border-tf-divider bg-white shadow-sm"
-      >
-        <iframe
-          src={`${pdfUrl}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`}
-          title={`Invoice ${invoiceNumber} preview`}
-          tabIndex={-1}
-          className="pointer-events-none block h-64 w-full bg-white"
-        />
-        <span className="pointer-events-none absolute inset-0 flex items-end justify-end p-2 transition group-hover:bg-black/[0.03]">
+      <div className="relative mt-3 overflow-hidden rounded-tf border border-tf-divider bg-white shadow-sm">
+        <div className="pointer-events-none">
+          <PdfPreview url={pdfUrl} heightClass="h-64" />
+        </div>
+        <a
+          href={pdfUrl}
+          target="_blank"
+          rel="noreferrer"
+          aria-label={`Open invoice ${invoiceNumber} PDF in a new tab`}
+          className="absolute inset-0 flex items-end justify-end p-2"
+        >
           <span className="rounded-full bg-tf-green-strong px-3 py-1 text-xs font-semibold text-white shadow">Open PDF ↗</span>
-        </span>
-      </a>
+        </a>
+      </div>
 
       <div className="mt-2 flex flex-wrap gap-2">
         <a href={pdfUrl} target="_blank" rel="noreferrer" className="rounded-full bg-tf-green-strong px-4 py-2 text-sm font-semibold text-white">

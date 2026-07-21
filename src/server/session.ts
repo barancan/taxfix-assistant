@@ -53,7 +53,10 @@ export function newSid(): string {
 
 export const cookieOptions = {
   httpOnly: true,
-  secure: true,
+  // Over http://localhost some browsers (e.g. Safari) drop `Secure` cookies,
+  // which breaks session-scoped subresources like the PDF preview iframe. Only
+  // require Secure in production (HTTPS).
+  secure: process.env.NODE_ENV === "production",
   sameSite: "lax" as const,
   path: "/",
   maxAge: MAX_AGE,
