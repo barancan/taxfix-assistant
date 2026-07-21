@@ -55,6 +55,9 @@ export default function AssistantPage() {
   const [messages, setMessages] = useState<Msg[]>(() => [
     { id: newId(), role: "assistant", kind: "text", text: SCRIPT.intent },
   ]);
+  // Collapsed earlier engagement, kept for context after "Continue conversation".
+  const [archived, setArchived] = useState<Msg[]>([]);
+  const [lastContext, setLastContext] = useState("");
   const [step, setStep] = useState<Step>("intent");
   const [c, setC] = useState<Collected>(emptyCollected());
   // Header reflects only CONFIRMED data — prefilled drafts stay hidden until the
@@ -199,6 +202,9 @@ export default function AssistantPage() {
       });
       const data = await res.json();
       const decision = data.decision;
+      setLastContext(
+        `Customer ${c.customerName} in ${c.countryCode}; ${c.serviceCategory} service; currency ${c.currency}. Decision: ${decision.decisionCode} (${decision.status}).`,
+      );
       if (decision.status === "approved") {
         showCard({ t: "decision", decision, citations: data.citations });
         say("Good news — this is supported. Want me to generate the invoice?");
@@ -237,9 +243,61 @@ export default function AssistantPage() {
       }
       showCard({ t: "invoiceReady", id: data.invoice.id, invoiceNumber: data.invoice.invoiceNumber, status: data.invoice.status });
       say("All done! Your invoice is ready above.");
+      setLastContext((prev) => `${prev} Invoice ${data.invoice.invoiceNumber} was issued.`);
     } catch {
       say("Generation failed. Please try again.");
       setCanGenerate(true);
+    } finally {
+      setBusy(false);
+      setTyping(false);
+    }
+  }
+
+  function continueConversation() {
+    setArchived((a) => [...a, ...messages]);
+    setMessages([{ id: newId(), role: "assistant", kind: "text", text: "Sure — what else can I help you with? I still have the details from our conversation." }]);
+    setCanGenerate(false);
+    setStep("chat");
+  }
+
+  function startOver() {
+    setArchived([]);
+    setMessages([{ id: newId(), role: "assistant", kind: "text", text: SCRIPT.intent }]);
+    setC(emptyCollected());
+    setConfirmed(emptyCollected());
+    setLastContext("");
+    setCanGenerate(false);
+    setByokOpen(false);
+    setInput("");
+    setStep("intent");
+  }
+
+  async function sendChat(text: string) {
+    youSaid(text);
+    setBusy(true);
+    setTyping(true);
+    const priorTurns = [...archived, ...messages]
+      .filter((m) => m.kind === "text" && m.text)
+      .map((m) => ({ role: m.role, content: m.text as string }))
+      .slice(-12);
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          messages: [...priorTurns, { role: "user", content: text }],
+          ...(lastContext ? { context: lastContext } : {}),
+          ...(byok.apiKey ? { byok } : {}),
+        }),
+      });
+      const data = await res.json();
+      if (data?.ok === true) say(data.text);
+      else if (data?.ok === false && data.noServerKey)
+        say("I can chat more freely once an AI key is connected (Anthropic or OpenAI). In the meantime I can still help you create an invoice — tap “New invoice”, or describe the next one.");
+      else if (data?.ok === false) say(data.userMessage ?? "Sorry, I couldn't respond just now.");
+      else say("Sorry, I couldn't respond just now.");
+    } catch {
+      say("Something went wrong. Please try again.");
     } finally {
       setBusy(false);
       setTyping(false);
@@ -253,6 +311,7 @@ export default function AssistantPage() {
     if (step === "intent") submitIntent(text);
     else if (step === "company_ask") { youSaid(text); runExtraction("company", text, null); }
     else if (step === "lineitems_ask") { youSaid(text); runExtraction("lineitems", text, null); }
+    else if (step === "chat") sendChat(text);
   }
 
   function onAttach(file: File) {
@@ -265,11 +324,21 @@ export default function AssistantPage() {
     if (p) runExtraction(p.kind, p.text, p.file);
   }
 
-  const showInput = !byokOpen && (step === "intent" || step === "company_ask" || step === "lineitems_ask");
+  function renderMessage(m: Msg) {
+    if (m.kind === "text") return <Bubble key={m.id} role={m.role}>{m.text}</Bubble>;
+    if (m.card?.t === "decision") return <DecisionCard key={m.id} decision={m.card.decision} citations={m.card.citations} />;
+    if (m.card?.t === "blocked") return <BlockedCard key={m.id} decision={m.card.decision} citations={m.card.citations} reviewCaseId={m.card.reviewCaseId} />;
+    if (m.card?.t === "invoiceReady") return <InvoiceReadyCard key={m.id} id={m.card.id} invoiceNumber={m.card.invoiceNumber} status={m.card.status} />;
+    return null;
+  }
+
+  const isTerminal = step === "decided" && !canGenerate;
+  const showInput = !byokOpen && (step === "intent" || step === "company_ask" || step === "lineitems_ask" || step === "chat");
   const placeholder =
     step === "intent" ? "Describe the invoice you need…" :
     step === "company_ask" ? "Company name, country, VAT ID…" :
-    step === "lineitems_ask" ? "e.g. 40 hours at €95 for web development" : "";
+    step === "lineitems_ask" ? "e.g. 40 hours at €95 for web development" :
+    step === "chat" ? "Ask me anything…" : "";
 
   return (
     <div className="flex min-h-[calc(100dvh-9rem)] flex-col">
@@ -279,17 +348,16 @@ export default function AssistantPage() {
       />
 
       <div className="flex flex-1 flex-col gap-3 py-4">
-        {messages.map((m) =>
-          m.kind === "text" ? (
-            <Bubble key={m.id} role={m.role}>{m.text}</Bubble>
-          ) : m.card?.t === "decision" ? (
-            <DecisionCard key={m.id} decision={m.card.decision} citations={m.card.citations} />
-          ) : m.card?.t === "blocked" ? (
-            <BlockedCard key={m.id} decision={m.card.decision} citations={m.card.citations} reviewCaseId={m.card.reviewCaseId} />
-          ) : m.card?.t === "invoiceReady" ? (
-            <InvoiceReadyCard key={m.id} id={m.card.id} invoiceNumber={m.card.invoiceNumber} status={m.card.status} />
-          ) : null,
-        )}
+        {archived.length > 0 ? (
+          <details className="rounded-tf border border-tf-divider bg-tf-surface-muted px-3 py-2">
+            <summary className="cursor-pointer text-xs font-medium text-tf-gray">
+              Earlier in this conversation ({archived.filter((m) => m.kind === "text").length} messages) — tap to expand
+            </summary>
+            <div className="mt-2 flex flex-col gap-2 opacity-75">{archived.map(renderMessage)}</div>
+          </details>
+        ) : null}
+
+        {messages.map(renderMessage)}
 
         {typing ? <TypingBubble /> : null}
 
@@ -315,8 +383,22 @@ export default function AssistantPage() {
             <button onClick={generateInvoice} disabled={busy} className="w-full rounded-full bg-tf-green-strong px-5 py-3 text-sm font-semibold text-white disabled:opacity-50">
               {busy ? "Generating…" : "Generate invoice"}
             </button>
+          ) : isTerminal ? (
+            <div className="flex flex-col gap-2">
+              <button onClick={continueConversation} className="w-full rounded-full bg-tf-green-strong px-5 py-3 text-sm font-semibold text-white active:scale-[0.99]">
+                Continue to chat
+              </button>
+              <button onClick={startOver} className="w-full rounded-full border border-tf-divider px-5 py-2.5 text-sm font-semibold text-tf-ink">
+                Start a new invoice
+              </button>
+            </div>
           ) : showInput ? (
-            <ChatInput value={input} onChange={setInput} onSend={onSend} onAttach={onAttach} placeholder={placeholder} disabled={busy} showAttach={step === "company_ask"} />
+            <>
+              <ChatInput value={input} onChange={setInput} onSend={onSend} onAttach={onAttach} placeholder={placeholder} disabled={busy} showAttach={step === "company_ask"} />
+              {step === "chat" ? (
+                <button onClick={startOver} className="mt-2 text-xs font-semibold text-tf-green-dark">＋ New invoice</button>
+              ) : null}
+            </>
           ) : (
             <p className="text-center text-xs text-tf-gray">Use the card above to continue.</p>
           )}

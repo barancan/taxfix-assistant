@@ -19,10 +19,21 @@ export type ExtractOutcome =
   | { ok: true; data: ExtractionResult; provider: ProviderName; model: string }
   | NormalizedProviderError;
 
+export interface ChatTurn {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export type ChatOutcome =
+  | { ok: true; text: string; provider: ProviderName; model: string }
+  | NormalizedProviderError;
+
 export interface AiProvider {
   readonly name: ProviderName;
   readonly model: string;
   extract(input: AiExtractInput): Promise<ExtractOutcome>;
+  /** General, scoped assistant chat. Must never make a tax determination. */
+  chat(system: string, turns: ChatTurn[]): Promise<ChatOutcome>;
 }
 
 export const REQUEST_TIMEOUT_MS = 30_000;

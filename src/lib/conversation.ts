@@ -13,7 +13,8 @@ export type Step =
   | "lineitems_ask"
   | "lineitems_confirm"
   | "assessing"
-  | "decided";
+  | "decided"
+  | "chat";
 
 export type StaticCard =
   | { t: "decision"; decision: DecisionResult; citations: Citation[] }

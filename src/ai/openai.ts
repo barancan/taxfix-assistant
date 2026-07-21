@@ -2,7 +2,14 @@ import OpenAI from "openai";
 import { ExtractionResultSchema, EXTRACTION_JSON_SCHEMA } from "./schema";
 import { EXTRACTION_SYSTEM_PROMPT, extractionUserPreamble } from "./prompts";
 import { makeError, normalizeOpenAiError } from "./errors";
-import { REQUEST_TIMEOUT_MS, type AiExtractInput, type AiProvider, type ExtractOutcome } from "./provider";
+import {
+  REQUEST_TIMEOUT_MS,
+  type AiExtractInput,
+  type AiProvider,
+  type ChatOutcome,
+  type ChatTurn,
+  type ExtractOutcome,
+} from "./provider";
 
 /** Minimal shape of the Responses API method we use — lets tests inject a fake. */
 export interface OpenAiLike {
@@ -66,6 +73,25 @@ export class OpenAiProvider implements AiProvider {
       const parsed = ExtractionResultSchema.safeParse(json);
       if (!parsed.success) return makeError("invalid_output");
       return { ok: true, data: parsed.data, provider: this.name, model: this.model };
+    } catch (err) {
+      return normalizeOpenAiError(err);
+    }
+  }
+
+  async chat(system: string, turns: ChatTurn[]): Promise<ChatOutcome> {
+    try {
+      const res = await this.getClient().responses.create(
+        {
+          model: this.model,
+          store: false,
+          instructions: system,
+          input: turns.map((t) => ({ role: t.role, content: t.content })),
+        },
+        { timeout: REQUEST_TIMEOUT_MS },
+      );
+      const text = (res.output_text ?? extractFromOutput(res.output) ?? "").trim();
+      if (!text) return makeError("invalid_output");
+      return { ok: true, text, provider: this.name, model: this.model };
     } catch (err) {
       return normalizeOpenAiError(err);
     }
