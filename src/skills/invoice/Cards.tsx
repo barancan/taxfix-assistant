@@ -200,7 +200,7 @@ export function BlockedCard({ decision, citations, reviewCaseId }: { decision: D
         </p>
         {reviewCaseId ? (
           <Link
-            href="/review"
+            href={`/review?case=${reviewCaseId}`}
             className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-tf-green-strong px-5 py-2.5 text-sm font-semibold text-white shadow-sm active:scale-95"
           >
             Escalate to a tax expert →
