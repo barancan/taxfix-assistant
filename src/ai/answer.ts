@@ -79,9 +79,9 @@ ${groundingBlock}
 Citation rules (strict): NEVER invent a source, section, date, or id. Use only ids present in the grounding above.
 
 Confidence rules:
-- confidence is your honest 0..1 estimate of the answer's reliability for this user.
-- Be LOW (< 0.5) for anything deadline-specific, amount-specific, case-specific, or not covered by the grounding.
-- Personal tax outcomes always warrant low confidence — a human expert should take those.`;
+- confidence is your honest 0..1 estimate that your answer is correct and supported by the grounding above.
+- If the grounding directly supports your answer, be confident (>= 0.7) — even for a deadline, threshold, or rule that the grounding states.
+- Be LOW (< 0.5) only when the grounding does NOT cover what was asked, or when the answer depends on the user's personal figures/circumstances that a human must confirm.`;
   return context ? `${base}\n\nSession context (reference only): ${context}` : base;
 }
 

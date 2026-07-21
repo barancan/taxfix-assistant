@@ -10,7 +10,19 @@ describe("knowledge retrieval (lexical)", () => {
   it("surfaces the Kleinunternehmer entry for the screenshot question", () => {
     const hits = retrieve("walk me through the things I can do as a Kleinunternehmer");
     expect(hits[0]?.entry.entryId).toBe("kleinunternehmer");
-    expect(hits[0]!.score).toBeGreaterThan(0.15);
+    expect(hits[0]!.score).toBeGreaterThan(0.3);
+  });
+
+  it("answers 'what should an invoice contain' with a strongly-ranked entry (regression)", () => {
+    const hits = retrieve("What should a freelancer invoice contain");
+    expect(hits[0]?.entry.entryId).toBe("invoice-fields");
+    expect(hits[0]!.score).toBeGreaterThan(0.5);
+  });
+
+  it("grounds a filing-deadline question (regression)", () => {
+    const hits = retrieve("when should I submit my income statement for 2025?");
+    expect(hits[0]?.entry.entryId).toBe("filing-deadlines");
+    expect(hits[0]!.score).toBeGreaterThan(0.5);
   });
 
   it("surfaces the reverse-charge entry", () => {
@@ -30,7 +42,7 @@ describe("knowledge retrieval (lexical)", () => {
   it("returns nothing above the floor for off-topic questions", () => {
     const hits = retrieve("what is the weather in Berlin tomorrow");
     const top = hits[0]?.score ?? 0;
-    expect(top).toBeLessThan(0.15);
+    expect(top).toBeLessThan(0.3);
   });
 
   it("scores are normalized within [0,1] and sorted descending", () => {

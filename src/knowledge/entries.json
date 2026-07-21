@@ -154,6 +154,22 @@
       "verificationStatus": "verified"
     },
     {
+      "entryId": "filing-deadlines",
+      "topic": "Tax return filing deadlines (§149 AO)",
+      "titleEn": "When tax returns are due",
+      "keywords": ["deadline", "due", "submit", "filing", "when", "income statement", "annual return", "steuererklärung", "abgabefrist", "frist", "149", "july", "31 july", "income tax return", "tax return"],
+      "questionExamples": [
+        "when should I submit my income statement",
+        "when is my tax return due",
+        "what is the filing deadline",
+        "when do I have to file my annual tax return"
+      ],
+      "answerEn": "Annual tax returns are generally due seven months after the year ends — by 31 July of the following year (§149 AO); so a 2025 return is due by 31 July 2026. If a tax advisor prepares it, the deadline extends to end of February of the second following year. VAT advance returns are separate and due monthly/quarterly via ELSTER. For your exact date and any tax-office extension, confirm with the tax office or a tax expert.",
+      "sourceIds": ["de-ao-149", "de-ustg-18", "de-elster"],
+      "scope": "general_guidance",
+      "verificationStatus": "verified"
+    },
+    {
       "entryId": "income-tax-vs-vat",
       "topic": "Income tax vs VAT",
       "titleEn": "The difference between income tax and VAT",
