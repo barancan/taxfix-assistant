@@ -180,8 +180,17 @@ export function useInvoiceSkill(host: ChatHost): SkillBindings {
         host.finishFlow(context); // terminal once generation completes or is skipped
       } else if (decision.status === "needs_clarification") {
         host.showCard("decision", { decision, citations: data.citations });
-        host.say("I need a bit more detail before I can decide.");
-        setStep("legal");
+        // Route to the step that can actually supply the missing field, so the
+        // user isn't sent to a card that can't collect it (e.g. a VAT ID lives
+        // on the company card, not the legal card) — this was causing a loop.
+        const missing = decision.missingFacts ?? [];
+        if (missing.some((f: string) => f.includes("vat_id"))) {
+          host.say("For an EU business customer I need their VAT ID to apply reverse charge — add it on the details above (or tick “Demo verification”).");
+          setStep("company_confirm");
+        } else {
+          host.say("I need a couple more details — please confirm below.");
+          setStep("legal");
+        }
       } else {
         host.showCard("blocked", { decision, citations: data.citations, reviewCaseId: data.reviewCaseId });
         setStep("decided");

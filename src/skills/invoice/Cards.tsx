@@ -40,8 +40,12 @@ export function CompanyConfirmCard({ value, onPatch, onConfirm }: { value: Colle
         </div>
         {region === "EU" ? (
           <div className="col-span-2">
-            <label className={label}>VAT ID</label>
+            <label className={label}>VAT ID <span className="font-normal normal-case text-tf-gray">(required for EU reverse charge)</span></label>
             <input className={input} value={value.vatId} onChange={(e) => onPatch({ vatId: e.target.value })} placeholder="e.g. PT123456789" />
+            <label className="mt-2 flex items-center gap-2 text-xs text-tf-gray">
+              <input type="checkbox" checked={value.demoVies} onChange={(e) => onPatch({ demoVies: e.target.checked })} />
+              Use seeded &ldquo;Demo verification&rdquo; (mock VIES)
+            </label>
           </div>
         ) : null}
         <div className="col-span-2">
@@ -64,7 +68,6 @@ export function CompanyConfirmCard({ value, onPatch, onConfirm }: { value: Colle
 }
 
 export function LegalConfirmCard({ value, onPatch, onConfirm }: { value: Collected; onPatch: Patch; onConfirm: () => void }) {
-  const region = regionForCountry(value.countryCode);
   return (
     <div className={cardCls}>
       <h3 className="mb-1 text-sm font-bold">A couple of things I must confirm</h3>
@@ -82,12 +85,6 @@ export function LegalConfirmCard({ value, onPatch, onConfirm }: { value: Collect
         <input type="checkbox" checked={value.businessConfirmed} onChange={(e) => onPatch({ businessConfirmed: e.target.checked })} />
         I confirm the customer is acting as a business.
       </label>
-      {region === "EU" ? (
-        <label className="mb-3 flex items-center gap-2 text-xs text-tf-gray">
-          <input type="checkbox" checked={value.demoVies} onChange={(e) => onPatch({ demoVies: e.target.checked })} />
-          Use seeded &ldquo;Demo verification&rdquo; for the VAT ID (mock VIES)
-        </label>
-      ) : null}
       <button onClick={onConfirm} className="mt-1 w-full rounded-full bg-tf-green-strong px-4 py-2.5 text-sm font-semibold text-white">
         Confirm
       </button>
