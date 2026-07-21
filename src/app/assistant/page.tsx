@@ -7,7 +7,10 @@ import type { Citation } from "@/domain/corpus";
 import { DecisionCard } from "@/components/DecisionCard";
 import { COUNTRY_OPTIONS, regionForCountry } from "@/lib/regions";
 import { PRESETS, type Preset } from "@/lib/presets";
-import { majorToMinor, minorToMajor, money } from "@/lib/format";
+import { majorToMinor, minorToMajor } from "@/lib/format";
+import { MODEL_ALLOWLIST } from "@/ai/models";
+import type { ExtractionResult } from "@/ai/schema";
+import type { ProviderName } from "@/ai/provider";
 
 interface LineForm {
   description: string;
@@ -89,8 +92,63 @@ export default function AssistantPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [aiError, setAiError] = useState<{ userMessage: string; byokRecoverable: boolean } | null>(null);
+  const [byokOpen, setByokOpen] = useState(false);
+  const [byok, setByok] = useState<{ provider: ProviderName; model: string; apiKey: string }>({
+    provider: "anthropic",
+    model: "claude-sonnet-5",
+    apiKey: "",
+  });
+
   const region = useMemo(() => regionForCountry(form.countryCode), [form.countryCode]);
   const set = (patch: Partial<FormState>) => setForm((f) => ({ ...f, ...patch }));
+
+  function applyExtraction(x: ExtractionResult) {
+    setForm((f) => ({
+      ...f,
+      customerName: x.customerName ?? f.customerName,
+      countryCode: x.customerCountryCode ?? f.countryCode,
+      vatId: x.customerVatId ?? f.vatId,
+      serviceCategory: x.suggestedCategory ?? f.serviceCategory,
+      serviceDescription: x.serviceDescription ?? f.serviceDescription,
+      currency: x.currency ?? f.currency,
+      customerType: "unknown", // AI never sets legal status — user must confirm
+      businessConfirmed: false,
+      addressText: x.customerAddressLines.length ? x.customerAddressLines.join("\n") : f.addressText,
+      lines: x.lineItems.length
+        ? x.lineItems.map((li) => ({ description: li.description, quantity: li.quantity ?? "1", unit: "unit", unitPriceMajor: li.unitPriceMajor ?? "0.00" }))
+        : x.amountMajor
+          ? [{ description: x.serviceDescription ?? "Service", quantity: "1", unit: "project", unitPriceMajor: x.amountMajor }]
+          : f.lines,
+    }));
+  }
+
+  async function extractWithAI() {
+    setAiError(null);
+    reset();
+    setBusy(true);
+    try {
+      const res = await fetch("/api/extract", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ text: form.sentence, ...(byok.apiKey ? { byok } : {}) }),
+      });
+      const data = await res.json();
+      if (data?.ok === true) {
+        applyExtraction(data.data as ExtractionResult);
+        setByokOpen(false);
+      } else if (data?.ok === false) {
+        setAiError({ userMessage: data.userMessage, byokRecoverable: data.byokRecoverable });
+        if (data.byokRecoverable) setByokOpen(true);
+      } else {
+        setAiError({ userMessage: "Could not extract. Enter details manually below.", byokRecoverable: false });
+      }
+    } catch {
+      setAiError({ userMessage: "Extraction failed. Enter details manually below.", byokRecoverable: false });
+    } finally {
+      setBusy(false);
+    }
+  }
 
   function reset() {
     setDecision(null);
@@ -207,6 +265,69 @@ export default function AssistantPage() {
         onChange={(e) => set({ sentence: e.target.value })}
         aria-label="Describe your invoice"
       />
+
+      <div className="flex items-center gap-2">
+        <button
+          onClick={extractWithAI}
+          disabled={busy || !form.sentence.trim()}
+          className="rounded-full border border-tf-green/40 bg-tf-green-pale px-4 py-2 text-sm font-semibold text-tf-green-dark disabled:opacity-50"
+        >
+          {busy ? "Extracting…" : "Extract with AI"}
+        </button>
+        <span className="text-xs text-tf-gray">Uploaded content is sent to the AI provider for extraction and is not stored.</span>
+      </div>
+
+      {aiError ? (
+        <div className="rounded-tf border border-tf-divider bg-tf-yellow-pale p-3 text-sm text-tf-amber" role="alert">
+          {aiError.userMessage}
+        </div>
+      ) : null}
+
+      {byokOpen ? (
+        <div className="rounded-tf-lg border border-tf-divider bg-tf-surface p-4">
+          <h3 className="text-sm font-bold">Use your own API key</h3>
+          <p className="mt-1 text-xs text-tf-gray">
+            Held in memory for this request only — never stored, logged, or kept after a refresh.
+          </p>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <select
+              className="rounded-tf border border-tf-divider px-2 py-2 text-sm"
+              value={byok.provider}
+              onChange={(e) => {
+                const provider = e.target.value as ProviderName;
+                setByok((b) => ({ ...b, provider, model: MODEL_ALLOWLIST[provider][0]!.id }));
+              }}
+            >
+              <option value="anthropic">Anthropic</option>
+              <option value="openai">OpenAI</option>
+            </select>
+            <select
+              className="rounded-tf border border-tf-divider px-2 py-2 text-sm"
+              value={byok.model}
+              onChange={(e) => setByok((b) => ({ ...b, model: e.target.value }))}
+            >
+              {MODEL_ALLOWLIST[byok.provider].map((m) => (
+                <option key={m.id} value={m.id}>{m.label}</option>
+              ))}
+            </select>
+            <input
+              type="password"
+              className="col-span-2 rounded-tf border border-tf-divider px-3 py-2 text-sm"
+              placeholder="API key (kept in memory only)"
+              value={byok.apiKey}
+              onChange={(e) => setByok((b) => ({ ...b, apiKey: e.target.value }))}
+              autoComplete="off"
+            />
+          </div>
+          <button
+            onClick={extractWithAI}
+            disabled={busy || !byok.apiKey}
+            className="mt-3 rounded-full bg-tf-green-strong px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+          >
+            Retry with my key
+          </button>
+        </div>
+      ) : null}
 
       <div className="flex flex-wrap gap-2">
         {PRESETS.map((p) => (
