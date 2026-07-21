@@ -61,6 +61,15 @@ export interface ChatHost {
    * chat with `contextSummary`.
    */
   finishFlow(contextSummary: string): void;
+  /**
+   * Route a free-text turn through the structured answer endpoint. The host
+   * renders the answer/escalation cards itself and returns how the turn was
+   * classified so the skill can decide whether to continue its script:
+   * - "invoice_request": the user wants an invoice → proceed with the flow
+   * - "answered": a general question was answered or escalated inline
+   * - "unavailable": AI unavailable → proceed with the scripted flow
+   */
+  askAssistant(question: string): Promise<"invoice_request" | "answered" | "unavailable">;
 }
 
 export interface SkillInputSpec {

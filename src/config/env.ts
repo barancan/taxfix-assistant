@@ -25,6 +25,13 @@ const EnvSchema = z.object({
     .optional()
     .transform((v) => v === "true"),
 
+  /**
+   * Display gate for general-question answers: below this self-assessed model
+   * confidence the answer is suppressed and the subject is raised to a human
+   * (review case). Only ever suppresses answers — never feeds tax decisions.
+   */
+  ANSWER_CONFIDENCE_THRESHOLD: z.coerce.number().min(0).max(1).default(0.65),
+
   SUPABASE_URL: z.string().url().optional().or(z.literal("").transform(() => undefined)),
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
   SUPABASE_STORAGE_BUCKET: z.string().default("invoices"),

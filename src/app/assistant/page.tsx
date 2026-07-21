@@ -6,6 +6,8 @@ import { SKILLS, getSkill } from "@/skills/registry";
 import type { ByokCredentials, ChatHost, SkillExample } from "@/skills/types";
 import { Bubble, ChatInput, RecommendedPrompts, TypingBubble } from "@/components/chat/primitives";
 import { ByokCard } from "@/components/chat/ByokCard";
+import { AnswerCard, EscalatedAnswerCard } from "@/components/chat/AnswerCard";
+import type { Citation } from "@/domain/corpus";
 
 /**
  * Generic assistant chat HOST. Owns the transcript, typing indicator, BYOK
@@ -40,6 +42,43 @@ export default function AssistantPage() {
 
   const say = (text: string) => setMessages((m) => [...m, { id: newId(), role: "assistant", kind: "text", text }]);
   const youSaid = (text: string) => setMessages((m) => [...m, { id: newId(), role: "user", kind: "text", text }]);
+  const showHostCard = (type: string, props: unknown) =>
+    setMessages((m) => [...m, { id: newId(), role: "assistant", kind: "card", card: { skillId: "assistant", type, props } }]);
+
+  /**
+   * Route a free-text turn through the structured answer endpoint (/api/chat):
+   * classification + light cited answer + confidence gate (below the env
+   * threshold the server escalates to a human review case).
+   */
+  async function askAssistant(question: string): Promise<"invoice_request" | "answered" | "unavailable"> {
+    setTyping(true);
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-skill": mode === "chat" ? "chat" : activeSkill.id },
+        body: JSON.stringify({
+          messages: [{ role: "user", content: question }],
+          ...(context ? { context } : {}),
+          ...(creds.apiKey ? { byok: creds } : {}),
+        }),
+      });
+      const data = await res.json();
+      if (data?.ok !== true) return "unavailable";
+      if (data.kind === "invoice_request") return "invoice_request";
+      if (data.escalated) {
+        showHostCard("escalated", { reviewCaseId: data.reviewCaseId });
+      } else if (data.kind === "question") {
+        showHostCard("answer", { text: data.text, citations: data.citations });
+      } else {
+        say(data.text || "Happy to help!");
+      }
+      return "answered";
+    } catch {
+      return "unavailable";
+    } finally {
+      setTyping(false);
+    }
+  }
 
   const host: ChatHost = {
     say,
@@ -59,6 +98,7 @@ export default function AssistantPage() {
       setContext(summary);
       setFlowDone(true);
     },
+    askAssistant,
   };
 
   const skill = activeSkill.useSkill(host);
@@ -83,31 +123,15 @@ export default function AssistantPage() {
   async function sendChat(text: string) {
     youSaid(text);
     setChatBusy(true);
-    setTyping(true);
-    const priorTurns = [...archived, ...messages]
-      .filter((m) => m.kind === "text" && m.text)
-      .map((m) => ({ role: m.role, content: m.text as string }))
-      .slice(-12);
     try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "content-type": "application/json", "x-skill": "chat" },
-        body: JSON.stringify({
-          messages: [...priorTurns, { role: "user", content: text }],
-          ...(context ? { context } : {}),
-          ...(creds.apiKey ? { byok: creds } : {}),
-        }),
-      });
-      const data = await res.json();
-      if (data?.ok === true) say(data.text);
-      else if (data?.ok === false && data.noServerKey)
-        say("I can chat more freely once an AI key is connected. In the meantime, tap “New invoice” and I'll walk you through the next one.");
-      else say(data?.userMessage ?? "Sorry, I couldn't respond just now.");
-    } catch {
-      say("Something went wrong. Please try again.");
+      const outcome = await askAssistant(text);
+      if (outcome === "invoice_request") {
+        say("Sounds like you want to create an invoice — tap “New invoice” below and I'll walk you through it.");
+      } else if (outcome === "unavailable") {
+        say("I can't answer general questions right now. Tap “New invoice” and I'll walk you through the next one.");
+      }
     } finally {
       setChatBusy(false);
-      setTyping(false);
     }
   }
 
@@ -126,6 +150,19 @@ export default function AssistantPage() {
   function renderMessage(m: Msg) {
     if (m.kind === "text") return <Bubble key={m.id} role={m.role}>{m.text}</Bubble>;
     if (m.card) {
+      // Host-level cards (general answers/escalations) are rendered here;
+      // everything else is delegated to the owning skill.
+      if (m.card.skillId === "assistant") {
+        if (m.card.type === "answer") {
+          const { text, citations } = m.card.props as { text: string; citations: Citation[] };
+          return <AnswerCard key={m.id} text={text} citations={citations} />;
+        }
+        if (m.card.type === "escalated") {
+          const { reviewCaseId } = m.card.props as { reviewCaseId: string | null };
+          return <EscalatedAnswerCard key={m.id} reviewCaseId={reviewCaseId} />;
+        }
+        return null;
+      }
       const owner = getSkill(m.card.skillId);
       return <div key={m.id}>{owner?.renderCard(m.card.type, m.card.props)}</div>;
     }

@@ -1,11 +1,13 @@
 import OpenAI from "openai";
 import { ExtractionResultSchema, EXTRACTION_JSON_SCHEMA } from "./schema";
+import { AnswerSchema, ANSWER_JSON_SCHEMA } from "./answer";
 import { EXTRACTION_SYSTEM_PROMPT, extractionUserPreamble } from "./prompts";
 import { makeError, normalizeOpenAiError } from "./errors";
 import {
   REQUEST_TIMEOUT_MS,
   type AiExtractInput,
   type AiProvider,
+  type AnswerOutcome,
   type ChatOutcome,
   type ChatTurn,
   type ExtractOutcome,
@@ -92,6 +94,41 @@ export class OpenAiProvider implements AiProvider {
       const text = (res.output_text ?? extractFromOutput(res.output) ?? "").trim();
       if (!text) return makeError("invalid_output");
       return { ok: true, text, provider: this.name, model: this.model };
+    } catch (err) {
+      return normalizeOpenAiError(err);
+    }
+  }
+
+  async answer(system: string, turns: ChatTurn[]): Promise<AnswerOutcome> {
+    try {
+      const res = await this.getClient().responses.create(
+        {
+          model: this.model,
+          store: false,
+          instructions: system,
+          input: turns.map((t) => ({ role: t.role, content: t.content })),
+          text: {
+            format: {
+              type: "json_schema",
+              name: "classify_and_answer",
+              strict: true,
+              schema: ANSWER_JSON_SCHEMA,
+            },
+          },
+        },
+        { timeout: REQUEST_TIMEOUT_MS },
+      );
+      const raw = res.output_text ?? extractFromOutput(res.output);
+      if (!raw) return makeError("invalid_output");
+      let json: unknown;
+      try {
+        json = JSON.parse(raw);
+      } catch {
+        return makeError("invalid_output");
+      }
+      const parsed = AnswerSchema.safeParse(json);
+      if (!parsed.success) return makeError("invalid_output");
+      return { ok: true, data: parsed.data, provider: this.name, model: this.model };
     } catch (err) {
       return normalizeOpenAiError(err);
     }

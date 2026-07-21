@@ -51,6 +51,18 @@ the LLM only extracts and phrases; legally material facts are confirmed by the
 user via cards; decisions come only from deterministic server services; fail
 closed.
 
+## General questions (host-level)
+
+Free text that isn't skill intent is routed through the structured answer
+endpoint (`/api/chat`): the model classifies the turn and may answer **lightly**.
+Citation rules still apply — it can only *select* source ids from the closed
+committed-corpus allowlist, and the server drops anything unknown, so citations
+are never invented. Display is gated by `ANSWER_CONFIDENCE_THRESHOLD` (env,
+default 0.65): below it the answer is suppressed and the subject is **raised to
+a human** as a review case. Model self-confidence only ever suppresses general
+answers; it never feeds tax decisions. Each query logs
+`confidence=… ≥/< threshold=…` to the agent trace.
+
 ## Agent trace
 
 Server terminal logs show skill actions, model queries, and responses in plain

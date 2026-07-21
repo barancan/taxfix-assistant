@@ -237,18 +237,41 @@ export function useInvoiceSkill(host: ChatHost): SkillBindings {
     setStep("company_confirm");
   }
 
-  function onInput(text: string) {
+  async function onInput(text: string) {
     if (step === "intent") {
       host.youSaid(text);
-      patch({ intent: text });
-      host.say(SCRIPT.company_ask!);
-      setStep("company_ask");
-    } else if (step === "company_ask") {
+      setBusy(true);
+      try {
+        // Route first: generic questions get a light, cited (or escalated)
+        // answer and the flow stays here; real invoice intent proceeds.
+        const outcome = await host.askAssistant(text);
+        if (outcome === "answered") {
+          host.say("Anything else? When you're ready, tell me about the invoice you need.");
+          return;
+        }
+        patch({ intent: text });
+        host.say(SCRIPT.company_ask!);
+        setStep("company_ask");
+      } finally {
+        setBusy(false);
+      }
+    } else if (step === "company_ask" || step === "lineitems_ask") {
       host.youSaid(text);
-      runExtraction("company", text, null);
-    } else if (step === "lineitems_ask") {
-      host.youSaid(text);
-      runExtraction("lineitems", text, null);
+      // Light mid-flow detour: a question mark routes to the answer endpoint,
+      // then the pending step question is re-asked.
+      if (text.trim().endsWith("?")) {
+        setBusy(true);
+        try {
+          const outcome = await host.askAssistant(text);
+          if (outcome === "answered") {
+            host.say(step === "company_ask" ? SCRIPT.company_ask! : SCRIPT.lineitems_ask!);
+            return;
+          }
+        } finally {
+          setBusy(false);
+        }
+      }
+      runExtraction(step === "company_ask" ? "company" : "lineitems", text, null);
     }
   }
 
