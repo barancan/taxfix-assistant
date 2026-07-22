@@ -22,8 +22,26 @@ export type GenerateResult =
   | { ok: true; invoice: StoredInvoice }
   | { ok: false; blocked: true; reviewCaseId: string | null; decisionCode: string; reason: string };
 
-function invoiceNumber(prefix: string, year: number, seq: number): string {
-  return `${prefix}-${year}-${String(seq).padStart(4, "0")}`;
+/** Slugify a client company name for the invoice number (uppercase, ASCII, dashed). */
+function clientSlug(name: string): string {
+  const s = name
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "") // strip accents
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 24)
+    .replace(/-+$/g, "");
+  return s || "CLIENT";
+}
+
+/**
+ * Invoice number: CLIENT-COMPANY-NAME-YEAR-INVOICENO. The sequential `seq` (the
+ * INVOICENO, zero-padded) is allocated by a concurrency-safe counter, so numbers
+ * stay unique and sequential per §14 UStG regardless of the client prefix.
+ */
+function invoiceNumber(customerName: string, year: number, seq: number): string {
+  return `${clientSlug(customerName)}-${year}-${String(seq).padStart(4, "0")}`;
 }
 
 function customerParty(facts: ClientFacts, addressLines: string[]): Party {
@@ -78,7 +96,7 @@ export async function generateInvoice(sessionId: string, payload: InvoicePayload
 
   const year = Number(draft.invoiceDate.slice(0, 4));
   const seq = await storage.allocateInvoiceNumber(year);
-  const number = invoiceNumber(profile.invoiceNumberPrefix, year, seq);
+  const number = invoiceNumber(payload.facts.customer.name, year, seq);
 
   const vm = composeInvoice({
     decision,
