@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { CATEGORIES, CURRENCIES, type Collected } from "./facts";
 import { COUNTRY_OPTIONS, regionForCountry } from "@/lib/regions";
@@ -14,8 +15,29 @@ const input = "w-full rounded-tf border border-tf-divider px-3 py-2 text-sm";
 
 type Patch = (p: Partial<Collected>) => void;
 
-export function CompanyConfirmCard({ value, onPatch, onConfirm }: { value: Collected; onPatch: Patch; onConfirm: () => void }) {
+export function CompanyConfirmCard({
+  value,
+  onPatch,
+  onConfirm,
+  focusField,
+}: {
+  value: Collected;
+  onPatch: Patch;
+  onConfirm: () => void;
+  /** Field to focus + glow (e.g. after a missing-VAT-ID clarification). */
+  focusField?: string | null;
+}) {
   const region = regionForCountry(value.countryCode);
+  const vatRef = useRef<HTMLInputElement>(null);
+  const highlightVat = focusField === "vatId" && !value.vatId;
+
+  useEffect(() => {
+    if (focusField === "vatId" && vatRef.current) {
+      vatRef.current.focus();
+      vatRef.current.scrollIntoView({ block: "center", behavior: "smooth" });
+    }
+  }, [focusField]);
+
   return (
     <div className={cardCls}>
       <h3 className="mb-1 text-sm font-bold">Confirm the client&rsquo;s details</h3>
@@ -40,8 +62,21 @@ export function CompanyConfirmCard({ value, onPatch, onConfirm }: { value: Colle
         </div>
         {region === "EU" ? (
           <div className="col-span-2">
-            <label className={label}>VAT ID</label>
-            <input className={input} value={value.vatId} onChange={(e) => onPatch({ vatId: e.target.value })} placeholder="e.g. PT123456789" />
+            <label className={label}>VAT ID <span className="font-normal normal-case text-tf-gray">(required for EU reverse charge)</span></label>
+            <input
+              ref={vatRef}
+              className={`${input} transition ${highlightVat ? "border-amber-400 ring-2 ring-amber-400/70 shadow-[0_0_0_4px_rgba(251,191,36,0.25)]" : ""}`}
+              value={value.vatId}
+              onChange={(e) => onPatch({ vatId: e.target.value })}
+              placeholder={`e.g. ${value.countryCode}123456789`}
+            />
+            {highlightVat ? (
+              <p className="mt-1 text-xs font-medium text-tf-amber">Add the customer&rsquo;s VAT ID here to continue — or get expert help below.</p>
+            ) : null}
+            <label className="mt-2 flex items-center gap-2 text-xs text-tf-gray">
+              <input type="checkbox" checked={value.demoVies} onChange={(e) => onPatch({ demoVies: e.target.checked })} />
+              Use seeded &ldquo;Demo verification&rdquo; (mock VIES)
+            </label>
           </div>
         ) : null}
         <div className="col-span-2">
@@ -64,7 +99,6 @@ export function CompanyConfirmCard({ value, onPatch, onConfirm }: { value: Colle
 }
 
 export function LegalConfirmCard({ value, onPatch, onConfirm }: { value: Collected; onPatch: Patch; onConfirm: () => void }) {
-  const region = regionForCountry(value.countryCode);
   return (
     <div className={cardCls}>
       <h3 className="mb-1 text-sm font-bold">A couple of things I must confirm</h3>
@@ -82,12 +116,6 @@ export function LegalConfirmCard({ value, onPatch, onConfirm }: { value: Collect
         <input type="checkbox" checked={value.businessConfirmed} onChange={(e) => onPatch({ businessConfirmed: e.target.checked })} />
         I confirm the customer is acting as a business.
       </label>
-      {region === "EU" ? (
-        <label className="mb-3 flex items-center gap-2 text-xs text-tf-gray">
-          <input type="checkbox" checked={value.demoVies} onChange={(e) => onPatch({ demoVies: e.target.checked })} />
-          Use seeded &ldquo;Demo verification&rdquo; for the VAT ID (mock VIES)
-        </label>
-      ) : null}
       <button onClick={onConfirm} className="mt-1 w-full rounded-full bg-tf-green-strong px-4 py-2.5 text-sm font-semibold text-white">
         Confirm
       </button>
@@ -172,7 +200,7 @@ export function BlockedCard({ decision, citations, reviewCaseId }: { decision: D
         </p>
         {reviewCaseId ? (
           <Link
-            href="/review"
+            href={`/review?case=${reviewCaseId}`}
             className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-tf-green-strong px-5 py-2.5 text-sm font-semibold text-white shadow-sm active:scale-95"
           >
             Escalate to a tax expert →

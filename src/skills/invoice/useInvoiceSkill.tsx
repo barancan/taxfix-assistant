@@ -67,8 +67,34 @@ export function useInvoiceSkill(host: ChatHost): SkillBindings {
   const [confirmed, setConfirmed] = useState<Collected>(emptyCollected());
   const [busy, setBusy] = useState(false);
   const [canGenerate, setCanGenerate] = useState(false);
+  // Field to focus + glow after a clarification (e.g. a missing EU VAT ID).
+  const [focusField, setFocusField] = useState<string | null>(null);
 
   const patch = (p: Partial<Collected>) => setC((x) => ({ ...x, ...p }));
+
+  async function escalateForClarification() {
+    host.setTyping(true);
+    try {
+      const res = await fetch("/api/escalate", {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-skill": "invoice" },
+        body: JSON.stringify({
+          facts: buildClientFacts(c),
+          reason: "EU business customer without a VAT ID — reverse charge cannot be applied automatically",
+          question: `How should the invoice to ${c.customerName} (${c.countryCode}) be handled without the customer's VAT ID?`,
+        }),
+      });
+      const data = await res.json();
+      host.showCard("escalated", { reviewCaseId: data.reviewCaseId ?? null });
+      host.say("Done — a Taxfix tax expert will take a look. You can track it under Review cases.");
+      setFocusField(null);
+      host.finishFlow(`Escalated: ${c.customerName} (${c.countryCode}) EU invoice without a VAT ID.`);
+    } catch {
+      host.say("Couldn't escalate just now — please try again.");
+    } finally {
+      host.setTyping(false);
+    }
+  }
 
   async function callExtract(text: string, file: File | null): Promise<Response> {
     const creds = host.byok.credentials;
@@ -134,6 +160,7 @@ export function useInvoiceSkill(host: ChatHost): SkillBindings {
   }
 
   function confirmCompany() {
+    setFocusField(null);
     setConfirmed((p) => ({
       ...p,
       customerName: c.customerName,
@@ -180,8 +207,18 @@ export function useInvoiceSkill(host: ChatHost): SkillBindings {
         host.finishFlow(context); // terminal once generation completes or is skipped
       } else if (decision.status === "needs_clarification") {
         host.showCard("decision", { decision, citations: data.citations });
-        host.say("I need a bit more detail before I can decide.");
-        setStep("legal");
+        // Route to the step that can actually supply the missing field, so the
+        // user isn't sent to a card that can't collect it (e.g. a VAT ID lives
+        // on the company card, not the legal card) — this was causing a loop.
+        const missing = decision.missingFacts ?? [];
+        if (missing.some((f: string) => f.includes("vat_id"))) {
+          host.say("For an EU business customer I need their VAT ID to apply reverse charge — I've highlighted the field above.");
+          setFocusField("vatId");
+          setStep("company_confirm");
+        } else {
+          host.say("I need a couple more details — please confirm below.");
+          setStep("legal");
+        }
       } else {
         host.showCard("blocked", { decision, citations: data.citations, reviewCaseId: data.reviewCaseId });
         setStep("decided");
@@ -333,6 +370,7 @@ export function useInvoiceSkill(host: ChatHost): SkillBindings {
     setConfirmed(emptyCollected());
     setBusy(false);
     setCanGenerate(false);
+    setFocusField(null);
   }
 
   const chips = useMemo<HeaderChip[]>(() => {
@@ -362,7 +400,7 @@ export function useInvoiceSkill(host: ChatHost): SkillBindings {
   return {
     header: <CollectedHeader chips={chips} />,
     activeCard:
-      step === "company_confirm" ? <CompanyConfirmCard value={c} onPatch={patch} onConfirm={confirmCompany} /> :
+      step === "company_confirm" ? <CompanyConfirmCard value={c} onPatch={patch} onConfirm={confirmCompany} focusField={focusField} /> :
       step === "legal" ? <LegalConfirmCard value={c} onPatch={patch} onConfirm={confirmLegal} /> :
       step === "lineitems_confirm" ? <LineItemsCard value={c} onPatch={patch} onConfirm={confirmLineItems} /> :
       null,
@@ -373,6 +411,14 @@ export function useInvoiceSkill(host: ChatHost): SkillBindings {
         className="w-full rounded-full bg-tf-green-strong px-5 py-3 text-sm font-semibold text-white disabled:opacity-50"
       >
         {busy ? "Generating…" : "Generate invoice"}
+      </button>
+    ) : focusField === "vatId" ? (
+      <button
+        onClick={escalateForClarification}
+        disabled={busy}
+        className="w-full rounded-full border border-amber-300 bg-tf-yellow-pale px-5 py-2.5 text-sm font-semibold text-tf-amber disabled:opacity-50"
+      >
+        I don&rsquo;t have their VAT ID — get expert help
       </button>
     ) : null,
     input,
