@@ -1,53 +1,110 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+
+/** Served from public/ by scripts/copy-pdf-worker.mjs — see that file for why. */
+const WORKER_SRC = "/pdf.worker.min.mjs";
+
+export type PdfPreviewStatus = "loading" | "ok" | "error";
+
+/** pdf.js rejects with this when we cancel a render task; it is not a failure. */
+function isRenderCancellation(err: unknown): boolean {
+  return (err as { name?: string } | null)?.name === "RenderingCancelledException";
+}
+
+/** pdf.js names its parse failures; anything else is a viewer/runtime problem. */
+function isBadPdf(err: unknown): boolean {
+  const name = (err as { name?: string } | null)?.name;
+  return (
+    name === "InvalidPDFException" ||
+    name === "MissingPDFException" ||
+    name === "UnexpectedResponseException"
+  );
+}
+
+/**
+ * Distinguish "the PDF is bad" from "the viewer never loaded". The worker probe
+ * runs only on the failure path, so the happy path stays at one request.
+ */
+async function classifyFailure(err: unknown): Promise<{ message: string; detail: string }> {
+  const detail = err instanceof Error ? err.message : String(err);
+
+  if (isBadPdf(err)) return { message: "This invoice PDF looks corrupted.", detail };
+
+  try {
+    const probe = await fetch(WORKER_SRC, { method: "HEAD", cache: "no-store" });
+    if (!probe.ok) {
+      return { message: "PDF viewer failed to load.", detail: `${WORKER_SRC} → HTTP ${probe.status}` };
+    }
+  } catch {
+    return { message: "PDF viewer failed to load.", detail: `${WORKER_SRC} is unreachable` };
+  }
+
+  return { message: "Couldn't render the PDF preview.", detail };
+}
 
 /**
  * Cross-browser PDF preview. Fetches the PDF with credentials (so the session
  * cookie is sent) and rasterizes page 1 onto a <canvas> via pdf.js. This works
  * everywhere — including mobile browsers and device emulation, where inline
  * <iframe>/<embed> PDF viewers render a blank frame. Errors are logged and
- * surfaced instead of failing silently.
+ * surfaced with enough detail to triage from a screenshot.
  */
 export function PdfPreview({
   url,
   heightClass = "h-64",
+  onStatusChange,
 }: {
   url: string;
   heightClass?: string;
+  onStatusChange?: (status: PdfPreviewStatus) => void;
 }) {
-  const [status, setStatus] = useState<"loading" | "ok" | "error">("loading");
+  const [status, setStatus] = useState<PdfPreviewStatus>("loading");
   const [message, setMessage] = useState("");
+  const [detail, setDetail] = useState("");
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
 
+  // Kept in a ref so a new callback identity doesn't re-run the render effect.
+  const onStatusChangeRef = useRef(onStatusChange);
+  useEffect(() => {
+    onStatusChangeRef.current = onStatusChange;
+  }, [onStatusChange]);
+
+  const publishStatus = useCallback((next: PdfPreviewStatus) => {
+    setStatus(next);
+    onStatusChangeRef.current?.(next);
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
+    let renderTask: { cancel: () => void } | null = null;
+
+    const fail = (msg: string, det = "") => {
+      if (cancelled) return;
+      setMessage(msg);
+      setDetail(det);
+      publishStatus("error");
+    };
 
     (async () => {
-      setStatus("loading");
+      publishStatus("loading");
       try {
         const res = await fetch(url, { credentials: "same-origin", cache: "no-store" });
         if (!res.ok) {
           console.error(`[PdfPreview] ${url} -> HTTP ${res.status}`);
-          if (!cancelled) {
-            setStatus("error");
-            setMessage(
-              res.status === 404
-                ? "Preview unavailable — this invoice may belong to an earlier session."
-                : `Couldn't load the PDF (HTTP ${res.status}).`,
-            );
-          }
+          fail(
+            res.status === 404
+              ? "Preview unavailable — this invoice may belong to an earlier session."
+              : `Couldn't load the PDF (HTTP ${res.status}).`,
+          );
           return;
         }
         const data = await res.arrayBuffer();
         console.info(`[PdfPreview] ${url} -> ${data.byteLength} bytes; rendering with pdf.js`);
 
         const pdfjs = await import("pdfjs-dist");
-        pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-          "pdfjs-dist/build/pdf.worker.min.mjs",
-          import.meta.url,
-        ).toString();
+        pdfjs.GlobalWorkerOptions.workerSrc = WORKER_SRC;
 
         const doc = await pdfjs.getDocument({ data }).promise;
         const page = await doc.getPage(1);
@@ -70,22 +127,29 @@ export function PdfPreview({
 
         const ctx = canvas.getContext("2d");
         if (!ctx) throw new Error("no 2d context");
-        await page.render({ canvas, canvasContext: ctx, viewport }).promise;
+
+        // Held so cleanup can cancel it — a second render on the same canvas is
+        // rejected by pdf.js and would surface as a bogus preview failure.
+        const task = page.render({ canvas, canvasContext: ctx, viewport });
+        renderTask = task;
+        await task.promise;
+        renderTask = null;
+
         console.info(`[PdfPreview] rendered page 1/${doc.numPages} at ${canvas.width}x${canvas.height}`);
-        if (!cancelled) setStatus("ok");
+        if (!cancelled) publishStatus("ok");
       } catch (err) {
+        if (isRenderCancellation(err) || cancelled) return;
         console.error(`[PdfPreview] ${url} -> render failed`, err);
-        if (!cancelled) {
-          setStatus("error");
-          setMessage("Couldn't render the PDF preview.");
-        }
+        const { message: msg, detail: det } = await classifyFailure(err);
+        fail(msg, det);
       }
     })();
 
     return () => {
       cancelled = true;
+      renderTask?.cancel();
     };
-  }, [url]);
+  }, [url, publishStatus]);
 
   return (
     <div ref={wrapRef} className={`relative w-full overflow-hidden ${heightClass} bg-white`}>
@@ -100,6 +164,7 @@ export function PdfPreview({
           <a href={url} target="_blank" rel="noreferrer" className="font-semibold text-tf-green-dark underline">
             Try opening it directly
           </a>
+          {detail ? <span className="text-xs opacity-60">{detail}</span> : null}
         </div>
       ) : null}
       <canvas ref={canvasRef} className={status === "ok" ? "block" : "invisible"} aria-label="Invoice PDF preview" />

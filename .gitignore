@@ -17,6 +17,9 @@ next-env.d.ts
 # local persistence fallback (never commit generated demo data)
 /.local-store/
 
+# copied from pdfjs-dist by scripts/copy-pdf-worker.mjs (postinstall + prebuild)
+/public/pdf.worker.min.mjs
+
 # env — never commit secrets
 .env
 .env.*
