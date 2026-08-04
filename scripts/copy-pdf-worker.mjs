@@ -7,6 +7,10 @@
 // package specifier it resolves against the emitted chunk's location and 404s
 // in a Turbopack production build, which silently breaks every preview.
 //
+// This copies the *legacy* build, which must stay in lockstep with the legacy
+// `pdf.mjs` that PdfPreview imports — mixing builds across the main/worker
+// boundary is unsupported. See PdfPreview for why legacy is required.
+//
 // Fails closed: if pdfjs-dist ever relocates the worker, the build breaks here
 // rather than in production.
 
@@ -24,10 +28,10 @@ const require = createRequire(import.meta.url);
 
 let src;
 try {
-  src = require.resolve("pdfjs-dist/build/pdf.worker.min.mjs");
+  src = require.resolve("pdfjs-dist/legacy/build/pdf.worker.min.mjs");
 } catch {
   console.error(
-    "❌ Could not resolve pdfjs-dist/build/pdf.worker.min.mjs.\n" +
+    "❌ Could not resolve pdfjs-dist/legacy/build/pdf.worker.min.mjs.\n" +
       "   The pdf.js worker moved or pdfjs-dist is not installed. PdfPreview\n" +
       "   loads it from /pdf.worker.min.mjs and will fail without it.",
   );

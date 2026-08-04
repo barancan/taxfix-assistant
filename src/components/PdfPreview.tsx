@@ -103,7 +103,15 @@ export function PdfPreview({
         const data = await res.arrayBuffer();
         console.info(`[PdfPreview] ${url} -> ${data.byteLength} bytes; rendering with pdf.js`);
 
-        const pdfjs = await import("pdfjs-dist");
+        // The *legacy* build is required, not a nice-to-have. The modern build
+        // calls Map.prototype.getOrInsertComputed (the TC39 upsert proposal)
+        // with no polyfill, so on any browser without it every render dies with
+        // "…getOrInsertComputed is not a function". Legacy bundles the core-js
+        // polyfill. Must stay in lockstep with the worker copied by
+        // scripts/copy-pdf-worker.mjs — mixing builds is unsupported.
+        const pdfjs = (await import(
+          "pdfjs-dist/legacy/build/pdf.mjs"
+        )) as typeof import("pdfjs-dist");
         pdfjs.GlobalWorkerOptions.workerSrc = WORKER_SRC;
 
         const doc = await pdfjs.getDocument({ data }).promise;
