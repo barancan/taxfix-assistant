@@ -51,6 +51,16 @@ export function today(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+/**
+ * Tidy address lines for storage/printing: drop surrounding whitespace and
+ * blank lines. Call this when the user commits the field, never on each
+ * keystroke — trimming a controlled textarea as it is typed swallows the space
+ * the user just entered at the end of a line, making the field feel broken.
+ */
+export function normalizeAddressLines(lines: string[]): string[] {
+  return lines.map((l) => l.trim()).filter(Boolean);
+}
+
 /** Build the client-supplied facts payload (profile is injected server-side). */
 export function buildClientFacts(c: Collected) {
   const region = regionForCountry(c.countryCode);

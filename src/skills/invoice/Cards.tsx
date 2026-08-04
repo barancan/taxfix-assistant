@@ -87,8 +87,12 @@ export function CompanyConfirmCard({
         </div>
         <div className="col-span-2">
           <label className={label}>Client address (one line each)</label>
+          {/* Split only — no trim/filter here. This is a controlled field, so
+              normalizing per keystroke would round-trip the typed space away
+              and the user could never separate words. Tidying happens on
+              confirm via normalizeAddressLines. */}
           <textarea className={`${input} min-h-16`} value={value.addressLines.join("\n")}
-            onChange={(e) => onPatch({ addressLines: e.target.value.split("\n").map((s) => s.trim()).filter(Boolean) })} />
+            onChange={(e) => onPatch({ addressLines: e.target.value.split("\n") })} />
         </div>
       </div>
       <button onClick={onConfirm} className="mt-4 w-full rounded-full bg-tf-green-strong px-4 py-2.5 text-sm font-semibold text-white">

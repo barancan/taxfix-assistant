@@ -11,6 +11,7 @@ import {
   buildInvoicePayload,
   collectedSubtotal,
   emptyCollected,
+  normalizeAddressLines,
   type Collected,
 } from "./facts";
 import { PRESETS } from "./examples";
@@ -168,7 +169,7 @@ export function useInvoiceSkill(host: ChatHost): SkillBindings {
       vatId: c.vatId,
       currency: c.currency,
       serviceCategory: c.serviceCategory,
-      addressLines: c.addressLines,
+      addressLines: normalizeAddressLines(c.addressLines),
     }));
     host.say("Thanks. A couple of things I must confirm about this customer.");
     setStep("legal");
