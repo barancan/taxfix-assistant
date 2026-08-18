@@ -39,6 +39,21 @@ export interface ByokCredentials {
   apiKey: string;
 }
 
+/**
+ * How the host classified a free-text turn routed through `askAssistant`.
+ *
+ * Failures carry their normalized, user-safe message so callers report what
+ * actually went wrong instead of guessing — a missing key must never be
+ * presented to the user as "I didn't understand you".
+ */
+export type AskOutcome =
+  | { kind: "invoice_request" }
+  | { kind: "answered" }
+  /** AI unavailable but the user can recover by supplying their own key. */
+  | { kind: "needs_key"; message: string }
+  /** AI unavailable and not BYOK-recoverable; fall back to the scripted flow. */
+  | { kind: "unavailable"; message: string };
+
 /** Host-owned BYOK recovery. Skills request it; the host renders the card. */
 export interface ByokControl {
   /** Current in-memory credentials (never persisted), or null. */
@@ -67,9 +82,10 @@ export interface ChatHost {
    * classified so the skill can decide whether to continue its script:
    * - "invoice_request": the user wants an invoice → proceed with the flow
    * - "answered": a general question was answered or escalated inline
+   * - "needs_key": offer BYOK recovery; do NOT advance the flow
    * - "unavailable": AI unavailable → proceed with the scripted flow
    */
-  askAssistant(question: string): Promise<"invoice_request" | "answered" | "unavailable">;
+  askAssistant(question: string): Promise<AskOutcome>;
 }
 
 export interface SkillInputSpec {
@@ -91,6 +107,14 @@ export interface SkillBindings {
   onInput(text: string): void;
   onAttach(file: File): void;
   startExample(example: SkillExample): void;
+  /**
+   * Begin the flow from a free-text sentence the host has ALREADY classified as
+   * this skill's intent (e.g. an invoice request typed in free chat). Resets
+   * skill state, then extracts straight from the sentence so details the user
+   * already gave aren't re-asked. Unlike `startExample` this takes arbitrary
+   * text, and unlike `onInput` it skips re-classification.
+   */
+  start(text: string): void;
   reset(): void;
 }
 

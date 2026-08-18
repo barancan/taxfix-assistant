@@ -325,11 +325,16 @@ export function useInvoiceSkill(host: ChatHost): SkillBindings {
         // Route first: generic questions get a light, cited (or escalated)
         // answer and the flow stays here; real invoice intent proceeds.
         const outcome = await host.askAssistant(text);
-        if (outcome === "answered") {
+        if (outcome.kind === "answered") {
           host.say("Anything else? When you're ready, tell me about the invoice you need.");
           return;
         }
-        if (outcome === "unavailable") {
+        if (outcome.kind === "needs_key") {
+          // Recoverable — stay put and let the user supply a key, then retry.
+          host.byok.open(outcome.message, () => onInput(text));
+          return;
+        }
+        if (outcome.kind === "unavailable") {
           // No AI — fall back to the manual company step.
           host.say(SCRIPT.company_ask!);
           setStep("company_ask");
@@ -348,8 +353,12 @@ export function useInvoiceSkill(host: ChatHost): SkillBindings {
         setBusy(true);
         try {
           const outcome = await host.askAssistant(text);
-          if (outcome === "answered") {
+          if (outcome.kind === "answered") {
             host.say(step === "company_ask" ? SCRIPT.company_ask! : SCRIPT.lineitems_ask!);
+            return;
+          }
+          if (outcome.kind === "needs_key") {
+            host.byok.open(outcome.message, () => onInput(text));
             return;
           }
         } finally {
@@ -363,6 +372,23 @@ export function useInvoiceSkill(host: ChatHost): SkillBindings {
   function onAttach(file: File) {
     host.youSaid("📷 Scanned a document");
     runExtraction(step === "lineitems_ask" ? "lineitems" : "company", "", file);
+  }
+
+  /**
+   * Begin from a sentence the host already classified as invoice intent (typed
+   * in free chat). Re-classifying would just repeat the /api/chat round-trip, so
+   * this goes straight to extraction. `patch` is a functional update, so it
+   * composes correctly after `reset()` within the same React batch.
+   */
+  async function start(text: string) {
+    reset();
+    patch({ intent: text });
+    setBusy(true);
+    try {
+      await extractFromIntent(text);
+    } finally {
+      setBusy(false);
+    }
   }
 
   function reset() {
@@ -427,6 +453,7 @@ export function useInvoiceSkill(host: ChatHost): SkillBindings {
     onInput,
     onAttach,
     startExample,
+    start,
     reset,
   };
 }
