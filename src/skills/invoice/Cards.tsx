@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { CATEGORIES, CURRENCIES, type Collected } from "./facts";
 import { COUNTRY_OPTIONS, regionForCountry } from "@/lib/regions";
 import { DecisionCard } from "@/components/DecisionCard";
-import { PdfPreview } from "@/components/PdfPreview";
+import { PdfPreview, type PdfPreviewStatus } from "@/components/PdfPreview";
 import type { DecisionResult } from "@/domain/schemas";
 import type { Citation } from "@/domain/corpus";
 
@@ -87,8 +87,12 @@ export function CompanyConfirmCard({
         </div>
         <div className="col-span-2">
           <label className={label}>Client address (one line each)</label>
+          {/* Split only — no trim/filter here. This is a controlled field, so
+              normalizing per keystroke would round-trip the typed space away
+              and the user could never separate words. Tidying happens on
+              confirm via normalizeAddressLines. */}
           <textarea className={`${input} min-h-16`} value={value.addressLines.join("\n")}
-            onChange={(e) => onPatch({ addressLines: e.target.value.split("\n").map((s) => s.trim()).filter(Boolean) })} />
+            onChange={(e) => onPatch({ addressLines: e.target.value.split("\n") })} />
         </div>
       </div>
       <button onClick={onConfirm} className="mt-4 w-full rounded-full bg-tf-green-strong px-4 py-2.5 text-sm font-semibold text-white">
@@ -149,6 +153,7 @@ export function LineItemsCard({ value, onPatch, onConfirm }: { value: Collected;
 
 export function InvoiceReadyCard({ id, invoiceNumber, status }: { id: string; invoiceNumber: string; status: string }) {
   const pdfUrl = `/api/invoices/${id}/pdf`;
+  const [previewStatus, setPreviewStatus] = useState<PdfPreviewStatus>("loading");
   if (status !== "issued") {
     return (
       <div className="rounded-tf-lg border border-red-200 bg-red-50 p-4">
@@ -162,20 +167,25 @@ export function InvoiceReadyCard({ id, invoiceNumber, status }: { id: string; in
       <p className="font-semibold text-tf-green-dark">Invoice ready 🎉</p>
       <p className="mt-1 text-sm">Number: <span className="font-mono">{invoiceNumber}</span></p>
 
-      {/* Inline PDF preview — the whole thumbnail opens the full PDF in a new tab. */}
+      {/* Inline PDF preview — once rendered, the whole thumbnail opens the full
+          PDF in a new tab. The overlay is mounted only on success: while loading
+          or in the error state it would swallow clicks on the preview's own
+          "Try opening it directly" link. */}
       <div className="relative mt-3 overflow-hidden rounded-tf border border-tf-divider bg-white shadow-sm">
-        <div className="pointer-events-none">
-          <PdfPreview url={pdfUrl} heightClass="h-64" />
+        <div className={previewStatus === "ok" ? "pointer-events-none" : undefined}>
+          <PdfPreview url={pdfUrl} heightClass="h-64" onStatusChange={setPreviewStatus} />
         </div>
-        <a
-          href={pdfUrl}
-          target="_blank"
-          rel="noreferrer"
-          aria-label={`Open invoice ${invoiceNumber} PDF in a new tab`}
-          className="absolute inset-0 flex items-end justify-end p-2"
-        >
-          <span className="rounded-full bg-tf-green-strong px-3 py-1 text-xs font-semibold text-white shadow">Open PDF ↗</span>
-        </a>
+        {previewStatus === "ok" ? (
+          <a
+            href={pdfUrl}
+            target="_blank"
+            rel="noreferrer"
+            aria-label={`Open invoice ${invoiceNumber} PDF in a new tab`}
+            className="absolute inset-0 flex items-end justify-end p-2"
+          >
+            <span className="rounded-full bg-tf-green-strong px-3 py-1 text-xs font-semibold text-white shadow">Open PDF ↗</span>
+          </a>
+        ) : null}
       </div>
 
       <div className="mt-2 flex flex-wrap gap-2">
