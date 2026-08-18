@@ -4,7 +4,7 @@ import { DecisionCard } from "@/components/DecisionCard";
 import { EscalatedAnswerCard } from "@/components/chat/AnswerCard";
 import type { SkillDefinition } from "../types";
 import { PRESETS } from "./examples";
-import { BlockedCard, InvoiceReadyCard } from "./Cards";
+import { BlockedCard, InvoiceReadyCard, SignupCard } from "./Cards";
 import { useInvoiceSkill } from "./useInvoiceSkill";
 
 /**
@@ -17,7 +17,7 @@ import { useInvoiceSkill } from "./useInvoiceSkill";
 export const invoiceSkill: SkillDefinition = {
   id: "invoice",
   title: "Create an invoice",
-  intro: "Hi! Tell me about the invoice you need — who are you billing and for what?",
+  intro: "Hi! Ask me anything about invoicing a client — like whether you should charge VAT — and I'll work it out and get the invoice ready.",
   examples: PRESETS.map((p) => ({ id: p.id, label: p.label, sentence: p.sentence, outcome: p.outcome })),
   useSkill: useInvoiceSkill,
   renderCard(type, props) {
@@ -40,6 +40,10 @@ export const invoiceSkill: SkillDefinition = {
     if (type === "escalated") {
       const { reviewCaseId } = props as { reviewCaseId: string | null };
       return <EscalatedAnswerCard reviewCaseId={reviewCaseId} />;
+    }
+    if (type === "signup") {
+      const { variant } = props as { variant: "save" | "expert" };
+      return <SignupCard variant={variant} />;
     }
     return null;
   },

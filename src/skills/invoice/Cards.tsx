@@ -127,6 +127,75 @@ export function LegalConfirmCard({ value, onPatch, onConfirm }: { value: Collect
   );
 }
 
+export function VatStatusCard({
+  onCharge,
+  onKleinunternehmer,
+  onNotSure,
+  busy,
+}: {
+  onCharge: () => void;
+  onKleinunternehmer: () => void;
+  onNotSure: () => void;
+  busy: boolean;
+}) {
+  return (
+    <div className={cardCls}>
+      <h3 className="mb-1 text-sm font-bold">One thing about you before I assess this</h3>
+      <p className="mb-3 text-xs text-tf-gray">This is what decides whether VAT applies — I don&rsquo;t assume it.</p>
+      <div className="flex flex-col gap-2">
+        <button
+          onClick={onCharge}
+          disabled={busy}
+          className="w-full rounded-full bg-tf-green-strong px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+        >
+          I charge VAT
+        </button>
+        <button
+          onClick={onKleinunternehmer}
+          disabled={busy}
+          className="w-full rounded-full border border-tf-divider px-4 py-2.5 text-sm font-semibold text-tf-ink disabled:opacity-50"
+        >
+          I use the small-business rule (Kleinunternehmer)
+        </button>
+        <button
+          onClick={onNotSure}
+          disabled={busy}
+          className="w-full rounded-full border border-amber-300 bg-tf-yellow-pale px-4 py-2.5 text-sm font-semibold text-tf-amber disabled:opacity-50"
+        >
+          Not sure — get expert help
+        </button>
+      </div>
+    </div>
+  );
+}
+
+const SIGNUP_COPY = {
+  save: {
+    title: "Save and send this invoice",
+    body: "Create a free Taxfix account to download it, send it, and skip the setup next time.",
+  },
+  expert: {
+    title: "Get this confirmed by an expert",
+    body: "Create a free Taxfix account and a Taxfix tax expert will review your case.",
+  },
+} as const;
+
+export function SignupCard({ variant }: { variant: keyof typeof SIGNUP_COPY }) {
+  const copy = SIGNUP_COPY[variant];
+  return (
+    <div className={cardCls}>
+      <p className="text-sm font-bold text-tf-ink">{copy.title}</p>
+      <p className="mt-1 text-sm text-tf-gray">{copy.body}</p>
+      <Link
+        href="/signup"
+        className="mt-3 inline-flex items-center justify-center rounded-full bg-tf-green-strong px-5 py-2.5 text-sm font-semibold text-white shadow-sm active:scale-95"
+      >
+        Create free account
+      </Link>
+    </div>
+  );
+}
+
 export function LineItemsCard({ value, onPatch, onConfirm }: { value: Collected; onPatch: Patch; onConfirm: () => void }) {
   const lines = value.lines.length ? value.lines : [{ description: "", quantity: "1", unit: "unit", unitPriceMajor: "0.00" }];
   const setLine = (i: number, patch: Partial<Collected["lines"][number]>) =>
