@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { newId, type Msg } from "@/lib/conversation";
 import { SKILLS, getSkill } from "@/skills/registry";
-import type { ByokCredentials, ChatHost, SkillExample } from "@/skills/types";
+import type { AskOutcome, ByokCredentials, ChatHost, SkillExample } from "@/skills/types";
 import { Bubble, ChatInput, RecommendedPrompts, TypingBubble } from "@/components/chat/primitives";
 import { ByokCard } from "@/components/chat/ByokCard";
 import { AnswerCard, EscalatedAnswerCard } from "@/components/chat/AnswerCard";
@@ -16,6 +16,8 @@ import type { Citation } from "@/domain/corpus";
  * invoice-specific (or other domain) logic.
  */
 const activeSkill = SKILLS[0]!; // single active skill for now; intent routing later
+
+const GENERIC_AI_ERROR = "I couldn't reach the AI just now. Please try again.";
 
 export default function AssistantPage() {
   const [messages, setMessages] = useState<Msg[]>(() => [
@@ -50,7 +52,7 @@ export default function AssistantPage() {
    * classification + light cited answer + confidence gate (below the env
    * threshold the server escalates to a human review case).
    */
-  async function askAssistant(question: string): Promise<"invoice_request" | "answered" | "unavailable"> {
+  async function askAssistant(question: string): Promise<AskOutcome> {
     setTyping(true);
     try {
       const res = await fetch("/api/chat", {
@@ -63,8 +65,21 @@ export default function AssistantPage() {
         }),
       });
       const data = await res.json();
-      if (data?.ok !== true) return "unavailable";
-      if (data.kind === "invoice_request") return "invoice_request";
+      if (data?.ok !== true) {
+        // Surface the real reason. The provider error carries a safe message and
+        // says whether the user's own key would fix it — never report a provider
+        // failure as if the assistant misunderstood the question.
+        if (data?.byokRecoverable) {
+          return {
+            kind: "needs_key",
+            message: data.noServerKey
+              ? "No AI key is configured on the server. Add your own to keep chatting."
+              : data.userMessage,
+          };
+        }
+        return { kind: "unavailable", message: data?.userMessage ?? GENERIC_AI_ERROR };
+      }
+      if (data.kind === "invoice_request") return { kind: "invoice_request" };
       if (data.escalated) {
         showHostCard("escalated", { reviewCaseId: data.reviewCaseId });
       } else if (data.kind === "question") {
@@ -72,9 +87,9 @@ export default function AssistantPage() {
       } else {
         say(data.text || "Happy to help!");
       }
-      return "answered";
+      return { kind: "answered" };
     } catch {
-      return "unavailable";
+      return { kind: "unavailable", message: GENERIC_AI_ERROR };
     } finally {
       setTyping(false);
     }
@@ -109,15 +124,27 @@ export default function AssistantPage() {
     setMode("chat");
   }
 
-  function startOver() {
-    setArchived([]);
-    setMessages([{ id: newId(), role: "assistant", kind: "text", text: activeSkill.intro }]);
+  /**
+   * Start the skill flow. With `seed` (an invoice request typed in free chat)
+   * the prior transcript is archived rather than dropped and the sentence is
+   * handed to the skill, so the user never retypes details they just gave.
+   * Without one this is the plain "New invoice" reset.
+   */
+  function startInvoice(seed?: string) {
+    if (seed) {
+      setArchived((a) => [...a, ...messages]);
+      setMessages([{ id: newId(), role: "user", kind: "text", text: seed }]);
+    } else {
+      setArchived([]);
+      setMessages([{ id: newId(), role: "assistant", kind: "text", text: activeSkill.intro }]);
+    }
     setMode("skill");
     setFlowDone(false);
     setContext("");
     setByokOpen(false);
     setInput("");
-    skill.reset();
+    if (seed) skill.start(seed);
+    else skill.reset();
   }
 
   async function sendChat(text: string) {
@@ -125,10 +152,15 @@ export default function AssistantPage() {
     setChatBusy(true);
     try {
       const outcome = await askAssistant(text);
-      if (outcome === "invoice_request") {
-        say("Sounds like you want to create an invoice — tap “New invoice” below and I'll walk you through it.");
-      } else if (outcome === "unavailable") {
-        say("I can't answer general questions right now. Tap “New invoice” and I'll walk you through the next one.");
+      if (outcome.kind === "invoice_request") {
+        startInvoice(text);
+      } else if (outcome.kind === "needs_key") {
+        // The BYOK card carries its own message; adding a bubble would duplicate it.
+        setByokMessage(outcome.message);
+        byokRetry.current = () => sendChat(text);
+        setByokOpen(true);
+      } else if (outcome.kind === "unavailable") {
+        say(outcome.message);
       }
     } finally {
       setChatBusy(false);
@@ -207,14 +239,28 @@ export default function AssistantPage() {
           />
         ) : null}
 
+        {/* End-of-flow actions belong in the transcript, not the sticky bar —
+            pinned they float over the last card and cover its own buttons. */}
+        {showTerminal ? (
+          <div className="mt-1 flex flex-col gap-2">
+            <button onClick={continueToChat} className="w-full rounded-full bg-tf-green-strong px-5 py-3 text-sm font-semibold text-white active:scale-[0.99]">
+              Continue to chat
+            </button>
+            <button onClick={() => startInvoice()} className="w-full rounded-full border border-tf-divider px-5 py-2.5 text-sm font-semibold text-tf-ink">
+              Start a new invoice
+            </button>
+          </div>
+        ) : null}
+
         <div ref={endRef} />
       </div>
 
-      {/* Sticky bar only when there's a real action; when a confirm card is
-          active it carries its own button, so no redundant sticky hint. */}
+      {/* Sticky bar only for persistent affordances — the text input and the
+          skill's own action. When a confirm card is active it carries its own
+          button, so no redundant sticky hint; terminal actions render inline. */}
       {(() => {
         const footerAction =
-          (mode === "skill" && skill.footer) || showTerminal || (Boolean(inputSpec) && !byokOpen);
+          (mode === "skill" && skill.footer) || (Boolean(inputSpec) && !byokOpen);
         if (!showExamples && !footerAction) return null;
         return (
           <div className="sticky bottom-[76px] z-10 -mx-5 bg-tf-surface">
@@ -227,30 +273,16 @@ export default function AssistantPage() {
               <div className="border-t border-tf-divider px-5 py-2.5">
                 {mode === "skill" && skill.footer ? (
                   skill.footer
-                ) : showTerminal ? (
-                  <div className="flex flex-col gap-2">
-                    <button onClick={continueToChat} className="w-full rounded-full bg-tf-green-strong px-5 py-3 text-sm font-semibold text-white active:scale-[0.99]">
-                      Continue to chat
-                    </button>
-                    <button onClick={startOver} className="w-full rounded-full border border-tf-divider px-5 py-2.5 text-sm font-semibold text-tf-ink">
-                      Start a new invoice
-                    </button>
-                  </div>
                 ) : (
-                  <>
-                    <ChatInput
-                      value={input}
-                      onChange={setInput}
-                      onSend={onSend}
-                      onAttach={skill.onAttach}
-                      placeholder={inputSpec!.placeholder}
-                      disabled={busy}
-                      showAttach={inputSpec!.showAttach}
-                    />
-                    {mode === "chat" ? (
-                      <button onClick={startOver} className="mt-2 text-xs font-semibold text-tf-green-dark">＋ New invoice</button>
-                    ) : null}
-                  </>
+                  <ChatInput
+                    value={input}
+                    onChange={setInput}
+                    onSend={onSend}
+                    onAttach={skill.onAttach}
+                    placeholder={inputSpec!.placeholder}
+                    disabled={busy}
+                    showAttach={inputSpec!.showAttach}
+                  />
                 )}
               </div>
             ) : null}
