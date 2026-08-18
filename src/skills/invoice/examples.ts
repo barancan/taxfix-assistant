@@ -25,8 +25,8 @@ export const PRESETS: Preset[] = [
   {
     id: "us",
     outcome: "success",
-    label: "US client · USD 12,000",
-    sentence: "I need to invoice a client in the US for 12,000 USD.",
+    label: "Billing a US company",
+    sentence: "Billing a US company, what goes on the invoice?",
     facts: {
       customer: { name: "Northwind US Inc.", countryCode: "US", region: "NON_EU", type: "business" },
       evidence: { vatIdCheck: "none", businessStatusConfirmedByUser: true, source: "manual" },
@@ -39,8 +39,8 @@ export const PRESETS: Preset[] = [
   {
     id: "pt",
     outcome: "success",
-    label: "Portugal B2B · reverse charge",
-    sentence: "Invoice a Portuguese company for web development, they gave me a VAT ID.",
+    label: "VAT to Portugal?",
+    sentence: "Do I charge VAT to a client in Portugal?",
     facts: {
       customer: { name: "Exemplo Unipessoal Lda", countryCode: "PT", region: "EU", type: "business", vatId: "PT123456789" },
       evidence: { vatIdFormatValid: true, vatIdCheck: "demo_vies", businessStatusConfirmedByUser: true, source: "manual" },
@@ -53,8 +53,8 @@ export const PRESETS: Preset[] = [
   {
     id: "de",
     outcome: "success",
-    label: "German B2B · 19% VAT",
-    sentence: "Invoice a German GmbH for consulting.",
+    label: "VAT to a German client?",
+    sentence: "Do I need to charge VAT to a German client?",
     facts: {
       customer: { name: "Beispiel GmbH", countryCode: "DE", region: "DE", type: "business" },
       evidence: { vatIdCheck: "none", businessStatusConfirmedByUser: true, source: "manual" },
@@ -67,8 +67,8 @@ export const PRESETS: Preset[] = [
   {
     id: "private",
     outcome: "blocked",
-    label: "Private customer · hard block",
-    sentence: "Invoice a private individual for coaching sessions.",
+    label: "Billing a private customer?",
+    sentence: "Can I invoice a private customer the same way as a business?",
     facts: {
       customer: { name: "John Private", countryCode: "DE", region: "DE", type: "private" },
       evidence: { vatIdCheck: "none", businessStatusConfirmedByUser: false, source: "manual" },
@@ -81,8 +81,8 @@ export const PRESETS: Preset[] = [
   {
     id: "escalate",
     outcome: "escalate",
-    label: "Unusual service · expert review",
-    sentence: "Invoice a German company for an online course bundle with downloadable materials.",
+    label: "Selling an online course?",
+    sentence: "Can I invoice a German company for an online course bundle with downloadable materials?",
     facts: {
       customer: { name: "Lernwerk GmbH", countryCode: "DE", region: "DE", type: "business" },
       evidence: { vatIdCheck: "none", businessStatusConfirmedByUser: true, source: "manual" },

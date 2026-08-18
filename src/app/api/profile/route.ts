@@ -15,6 +15,7 @@ export async function GET() {
 }
 
 const PatchSchema = z.object({
+  legalName: z.string().min(1).optional(),
   businessName: z.string().min(1).optional(),
   kleinunternehmer: z.boolean().optional(),
   vatRegistered: z.boolean().optional(),

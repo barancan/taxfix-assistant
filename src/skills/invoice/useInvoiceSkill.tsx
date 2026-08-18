@@ -15,7 +15,7 @@ import {
   type Collected,
 } from "./facts";
 import { PRESETS } from "./examples";
-import { CompanyConfirmCard, LegalConfirmCard, LineItemsCard } from "./Cards";
+import { CompanyConfirmCard, LegalConfirmCard, LineItemsCard, VatStatusCard } from "./Cards";
 
 export type InvoiceStep =
   | "intent"
@@ -24,6 +24,7 @@ export type InvoiceStep =
   | "legal"
   | "lineitems_ask"
   | "lineitems_confirm"
+  | "vat_status"
   | "assessing"
   | "decided";
 
@@ -68,33 +69,48 @@ export function useInvoiceSkill(host: ChatHost): SkillBindings {
   const [confirmed, setConfirmed] = useState<Collected>(emptyCollected());
   const [busy, setBusy] = useState(false);
   const [canGenerate, setCanGenerate] = useState(false);
+  // The visitor's own name for the invoice supplier block — asked once via
+  // chat, not assumed from the seeded demo profile. Not reset between
+  // invoices in the same session, so it isn't retyped every time.
+  const [supplierName, setSupplierName] = useState("");
   // Field to focus + glow after a clarification (e.g. a missing EU VAT ID).
   const [focusField, setFocusField] = useState<string | null>(null);
 
   const patch = (p: Partial<Collected>) => setC((x) => ({ ...x, ...p }));
 
-  async function escalateForClarification() {
+  async function escalateForClarification(reason: string, question: string) {
     host.setTyping(true);
     try {
       const res = await fetch("/api/escalate", {
         method: "POST",
         headers: { "content-type": "application/json", "x-skill": "invoice" },
-        body: JSON.stringify({
-          facts: buildClientFacts(c),
-          reason: "EU business customer without a VAT ID — reverse charge cannot be applied automatically",
-          question: `How should the invoice to ${c.customerName} (${c.countryCode}) be handled without the customer's VAT ID?`,
-        }),
+        body: JSON.stringify({ facts: buildClientFacts(c), reason, question }),
       });
       const data = await res.json();
       host.showCard("escalated", { reviewCaseId: data.reviewCaseId ?? null });
+      host.showCard("signup", { variant: "expert" });
       host.say("Done — a Taxfix tax expert will take a look. You can track it under Review cases.");
       setFocusField(null);
-      host.finishFlow(`Escalated: ${c.customerName} (${c.countryCode}) EU invoice without a VAT ID.`);
+      host.finishFlow(`Escalated: ${c.customerName} (${c.countryCode}) — ${reason}`);
     } catch {
       host.say("Couldn't escalate just now — please try again.");
     } finally {
       host.setTyping(false);
     }
+  }
+
+  function escalateMissingVatId() {
+    escalateForClarification(
+      "EU business customer without a VAT ID — reverse charge cannot be applied automatically",
+      `How should the invoice to ${c.customerName} (${c.countryCode}) be handled without the customer's VAT ID?`,
+    );
+  }
+
+  function escalateVatStatusUnsure() {
+    escalateForClarification(
+      "Visitor is unsure whether they charge VAT or qualify for the small-business (Kleinunternehmer) rule.",
+      "Which VAT status applies to this visitor — standard VAT registration or the Kleinunternehmer small-business rule?",
+    );
   }
 
   async function callExtract(text: string, file: File | null): Promise<Response> {
@@ -186,8 +202,32 @@ export function useInvoiceSkill(host: ChatHost): SkillBindings {
     }
   }
 
-  async function confirmLineItems() {
+  function confirmLineItems() {
     setConfirmed((p) => ({ ...p, lines: c.lines, currency: c.currency }));
+    setStep("vat_status");
+  }
+
+  async function applyVatStatus(choice: "vat_registered" | "kleinunternehmer") {
+    setBusy(true);
+    try {
+      await fetch("/api/profile", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(
+          choice === "vat_registered"
+            ? { vatRegistered: true, kleinunternehmer: false }
+            : { vatRegistered: false, kleinunternehmer: true },
+        ),
+      });
+    } catch {
+      // Assessment still proceeds against the profile's existing values.
+    } finally {
+      setBusy(false);
+    }
+    await runAssessment();
+  }
+
+  async function runAssessment() {
     setStep("assessing");
     host.setTyping(true);
     host.say("Let me check the VAT treatment and prepare everything…");
@@ -222,6 +262,7 @@ export function useInvoiceSkill(host: ChatHost): SkillBindings {
         }
       } else {
         host.showCard("blocked", { decision, citations: data.citations, reviewCaseId: data.reviewCaseId });
+        host.showCard("signup", { variant: "expert" });
         setStep("decided");
         host.finishFlow(context);
       }
@@ -238,6 +279,11 @@ export function useInvoiceSkill(host: ChatHost): SkillBindings {
     setCanGenerate(false);
     host.setTyping(true);
     try {
+      await fetch("/api/profile", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ legalName: supplierName.trim(), businessName: supplierName.trim() }),
+      });
       const res = await fetch("/api/invoice", {
         method: "POST",
         headers: { "content-type": "application/json", "x-skill": "invoice" },
@@ -249,6 +295,7 @@ export function useInvoiceSkill(host: ChatHost): SkillBindings {
         return;
       }
       host.showCard("invoiceReady", { id: data.invoice.id, invoiceNumber: data.invoice.invoiceNumber, status: data.invoice.status });
+      host.showCard("signup", { variant: "save" });
       host.say("All done! Your invoice is ready above.");
       host.finishFlow(`Invoice ${data.invoice.invoiceNumber} was issued for ${c.customerName}.`);
     } catch {
@@ -430,18 +477,34 @@ export function useInvoiceSkill(host: ChatHost): SkillBindings {
       step === "company_confirm" ? <CompanyConfirmCard value={c} onPatch={patch} onConfirm={confirmCompany} focusField={focusField} /> :
       step === "legal" ? <LegalConfirmCard value={c} onPatch={patch} onConfirm={confirmLegal} /> :
       step === "lineitems_confirm" ? <LineItemsCard value={c} onPatch={patch} onConfirm={confirmLineItems} /> :
+      step === "vat_status" ? (
+        <VatStatusCard
+          onCharge={() => applyVatStatus("vat_registered")}
+          onKleinunternehmer={() => applyVatStatus("kleinunternehmer")}
+          onNotSure={escalateVatStatusUnsure}
+          busy={busy}
+        />
+      ) :
       null,
     footer: canGenerate ? (
-      <button
-        onClick={generateInvoice}
-        disabled={busy}
-        className="w-full rounded-full bg-tf-green-strong px-5 py-3 text-sm font-semibold text-white disabled:opacity-50"
-      >
-        {busy ? "Generating…" : "Generate invoice"}
-      </button>
+      <div className="flex flex-col gap-2">
+        <input
+          value={supplierName}
+          onChange={(e) => setSupplierName(e.target.value)}
+          placeholder="Your name or business name — appears on the invoice"
+          className="w-full rounded-tf border border-tf-divider px-3 py-2 text-sm"
+        />
+        <button
+          onClick={generateInvoice}
+          disabled={busy || !supplierName.trim()}
+          className="w-full rounded-full bg-tf-green-strong px-5 py-3 text-sm font-semibold text-white disabled:opacity-50"
+        >
+          {busy ? "Generating…" : "Generate invoice"}
+        </button>
+      </div>
     ) : focusField === "vatId" ? (
       <button
-        onClick={escalateForClarification}
+        onClick={escalateMissingVatId}
         disabled={busy}
         className="w-full rounded-full border border-amber-300 bg-tf-yellow-pale px-5 py-2.5 text-sm font-semibold text-tf-amber disabled:opacity-50"
       >
