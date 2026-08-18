@@ -69,6 +69,10 @@ export function useInvoiceSkill(host: ChatHost): SkillBindings {
   const [confirmed, setConfirmed] = useState<Collected>(emptyCollected());
   const [busy, setBusy] = useState(false);
   const [canGenerate, setCanGenerate] = useState(false);
+  // The visitor's own name for the invoice supplier block — asked once via
+  // chat, not assumed from the seeded demo profile. Not reset between
+  // invoices in the same session, so it isn't retyped every time.
+  const [supplierName, setSupplierName] = useState("");
   // Field to focus + glow after a clarification (e.g. a missing EU VAT ID).
   const [focusField, setFocusField] = useState<string | null>(null);
 
@@ -275,6 +279,11 @@ export function useInvoiceSkill(host: ChatHost): SkillBindings {
     setCanGenerate(false);
     host.setTyping(true);
     try {
+      await fetch("/api/profile", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ legalName: supplierName.trim(), businessName: supplierName.trim() }),
+      });
       const res = await fetch("/api/invoice", {
         method: "POST",
         headers: { "content-type": "application/json", "x-skill": "invoice" },
@@ -478,13 +487,21 @@ export function useInvoiceSkill(host: ChatHost): SkillBindings {
       ) :
       null,
     footer: canGenerate ? (
-      <button
-        onClick={generateInvoice}
-        disabled={busy}
-        className="w-full rounded-full bg-tf-green-strong px-5 py-3 text-sm font-semibold text-white disabled:opacity-50"
-      >
-        {busy ? "Generating…" : "Generate invoice"}
-      </button>
+      <div className="flex flex-col gap-2">
+        <input
+          value={supplierName}
+          onChange={(e) => setSupplierName(e.target.value)}
+          placeholder="Your name or business name — appears on the invoice"
+          className="w-full rounded-tf border border-tf-divider px-3 py-2 text-sm"
+        />
+        <button
+          onClick={generateInvoice}
+          disabled={busy || !supplierName.trim()}
+          className="w-full rounded-full bg-tf-green-strong px-5 py-3 text-sm font-semibold text-white disabled:opacity-50"
+        >
+          {busy ? "Generating…" : "Generate invoice"}
+        </button>
+      </div>
     ) : focusField === "vatId" ? (
       <button
         onClick={escalateMissingVatId}
