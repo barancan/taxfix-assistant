@@ -186,12 +186,14 @@ export function SignupCard({ variant }: { variant: keyof typeof SIGNUP_COPY }) {
     <div className={cardCls}>
       <p className="text-sm font-bold text-tf-ink">{copy.title}</p>
       <p className="mt-1 text-sm text-tf-gray">{copy.body}</p>
-      <Link
-        href="/signup"
-        className="mt-3 inline-flex items-center justify-center rounded-full bg-tf-green-strong px-5 py-2.5 text-sm font-semibold text-white shadow-sm active:scale-95"
-      >
-        Create free account
-      </Link>
+      <div className="mt-3 flex justify-end">
+        <Link
+          href="/signup"
+          className="inline-flex items-center justify-center rounded-full bg-tf-green-strong px-5 py-2.5 text-sm font-semibold text-white shadow-sm active:scale-95"
+        >
+          Create your account now!
+        </Link>
+      </div>
     </div>
   );
 }

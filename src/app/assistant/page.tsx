@@ -118,12 +118,6 @@ export default function AssistantPage() {
 
   const skill = activeSkill.useSkill(host);
 
-  function continueToChat() {
-    setArchived((a) => [...a, ...messages]);
-    setMessages([{ id: newId(), role: "assistant", kind: "text", text: "Sure — what else can I help you with? I still have the details from our conversation." }]);
-    setMode("chat");
-  }
-
   /**
    * Start the skill flow. With `seed` (an invoice request typed in free chat)
    * the prior transcript is archived rather than dropped and the sentence is
@@ -204,7 +198,6 @@ export default function AssistantPage() {
   const busy = skill.busy || chatBusy;
   const showExamples = mode === "skill" && !flowDone && !byokOpen && skill.input !== null && messages.length <= 1;
   const inputSpec = mode === "chat" ? { placeholder: "Ask me anything…", showAttach: false } : skill.input;
-  const showTerminal = mode === "skill" && flowDone && !skill.footer;
 
   return (
     <div className="flex min-h-[calc(100dvh-9rem)] flex-col">
@@ -237,19 +230,6 @@ export default function AssistantPage() {
             message={byokMessage}
             busy={busy}
           />
-        ) : null}
-
-        {/* End-of-flow actions belong in the transcript, not the sticky bar —
-            pinned they float over the last card and cover its own buttons. */}
-        {showTerminal ? (
-          <div className="mt-1 flex flex-col gap-2">
-            <button onClick={continueToChat} className="w-full rounded-full bg-tf-green-strong px-5 py-3 text-sm font-semibold text-white active:scale-[0.99]">
-              Continue to chat
-            </button>
-            <button onClick={() => startInvoice()} className="w-full rounded-full border border-tf-divider px-5 py-2.5 text-sm font-semibold text-tf-ink">
-              Start a new invoice
-            </button>
-          </div>
         ) : null}
 
         <div ref={endRef} />

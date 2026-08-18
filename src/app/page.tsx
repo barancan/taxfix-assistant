@@ -23,11 +23,11 @@ export default function HomePage() {
     <div className="flex flex-col gap-8">
       <section>
         <h1 className="text-3xl font-extrabold tracking-tight text-tf-ink">
-          Not sure how to invoice a client?
+          You&rsquo;re great at what you do. VAT law? We got you covered.
         </h1>
         <p className="mt-2 text-tf-gray">
-          Ask the AI Tax Assistant your real question and see how it handles German VAT — before you
-          create an account.
+          Ask the AI Tax Assistant your real invoicing question and get a cited, plain-English answer —
+          before you create an account.
         </p>
       </section>
 
