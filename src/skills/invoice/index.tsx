@@ -42,8 +42,7 @@ export const invoiceSkill: SkillDefinition = {
       return <EscalatedAnswerCard reviewCaseId={reviewCaseId} />;
     }
     if (type === "signup") {
-      const { variant } = props as { variant: "save" | "expert" };
-      return <SignupCard variant={variant} />;
+      return <SignupCard />;
     }
     return null;
   },
