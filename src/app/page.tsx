@@ -1,66 +1,56 @@
 import Link from "next/link";
 
+const VALUE_PROPS = [
+  {
+    icon: "✅",
+    headline: "Know the right VAT treatment before you send.",
+    subtext: "Standard, reverse charge, or small-business rule, worked out for your exact transaction.",
+  },
+  {
+    icon: "📖",
+    headline: "See the actual German rule, in plain English.",
+    subtext: "Every answer cites its source. No tax jargon to decode.",
+  },
+  {
+    icon: "🧾",
+    headline: "Leave with a compliant invoice, ready to send.",
+    subtext: "Correct fields, correct wording, generated for you.",
+  },
+];
+
 export default function HomePage() {
-  const taxYear = new Date().getFullYear();
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-8">
       <section>
-        <p className="text-sm font-medium text-tf-gray">Tax year {taxYear}</p>
-        <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-tf-ink">
-          Hi Alex 👋
+        <h1 className="text-3xl font-extrabold tracking-tight text-tf-ink">
+          Not sure how to invoice a client?
         </h1>
         <p className="mt-2 text-tf-gray">
-          Your taxes are on track. Need to send an invoice? The Assistant works out
-          the right VAT treatment and prepares a compliant PDF.
+          Ask the AI Tax Assistant your real question and see how it handles German VAT — before you
+          create an account.
         </p>
       </section>
 
-      <Link
-        href="/assistant"
-        className="group relative flex min-h-44 flex-col justify-between overflow-hidden rounded-tf-lg bg-tf-green-pale p-5 ring-1 ring-tf-green/20 transition active:scale-[0.99]"
-      >
-        <div>
-          <span className="inline-flex items-center gap-1 rounded-full bg-tf-surface/70 px-2.5 py-1 text-xs font-semibold text-tf-green-dark">
-            ✨ AI Tax Assistant
-          </span>
-          <h2 className="mt-3 text-2xl font-extrabold leading-tight tracking-tight text-tf-ink">
-            Invoice a client in minutes
-          </h2>
-          <p className="mt-1.5 text-sm text-tf-gray">
-            Tell me who you’re billing — I’ll pick the right VAT treatment, cite the
-            law, and build a compliant PDF.
-          </p>
-        </div>
-        <div className="mt-4 flex items-center justify-between">
-          <span className="text-sm font-semibold text-tf-green-dark">Start a conversation</span>
-          <span
-            aria-hidden
-            className="flex h-12 w-12 items-center justify-center rounded-full bg-tf-green-strong text-xl text-white shadow-sm transition group-active:scale-95"
-          >
-            →
-          </span>
-        </div>
-      </Link>
+      <section className="flex flex-col gap-3">
+        {VALUE_PROPS.map((v) => (
+          <div key={v.headline} className="flex gap-3 rounded-tf-lg border border-tf-divider bg-tf-surface p-4">
+            <span aria-hidden className="text-xl leading-none">{v.icon}</span>
+            <div>
+              <p className="text-sm font-bold text-tf-ink">{v.headline}</p>
+              <p className="mt-1 text-sm text-tf-gray">{v.subtext}</p>
+            </div>
+          </div>
+        ))}
+      </section>
 
-      <section className="grid grid-cols-2 gap-3">
+      <section className="flex flex-col gap-1.5">
         <Link
-          href="/invoices"
-          className="rounded-tf border border-tf-divider bg-tf-surface p-4 text-sm font-semibold text-tf-ink"
+          href="/assistant"
+          className="w-full rounded-full bg-tf-green-strong px-5 py-3.5 text-center text-sm font-semibold text-white shadow-sm active:scale-[0.99]"
         >
-          Invoices
-          <span className="mt-1 block text-xs font-normal text-tf-gray">
-            History & downloads
-          </span>
+          Try it, no account needed
         </Link>
-        <Link
-          href="/account"
-          className="rounded-tf border border-tf-divider bg-tf-surface p-4 text-sm font-semibold text-tf-ink"
-        >
-          Account
-          <span className="mt-1 block text-xs font-normal text-tf-gray">
-            Your Taxfix profile
-          </span>
-        </Link>
+        <p className="text-center text-xs text-tf-gray">Takes about a minute.</p>
       </section>
     </div>
   );
