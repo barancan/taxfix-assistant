@@ -1,6 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import { ReviewCaseCard, type ReviewCase } from "@/components/ReviewCaseCard";
+
+/** How many tickets the Account summary shows before deferring to /review. */
+const TICKET_PREVIEW = 3;
 
 interface Profile {
   legalName: string;
@@ -18,9 +23,12 @@ export default function AccountPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [mode, setMode] = useState("local");
   const [saved, setSaved] = useState(false);
+  const [cases, setCases] = useState<ReviewCase[]>([]);
 
   useEffect(() => {
     fetch("/api/profile").then((r) => r.json()).then((d) => { setProfile(d.profile); setMode(d.storageMode); });
+    // Tickets load independently — the page must not wait on them to render.
+    fetch("/api/review-cases").then((r) => r.json()).then((d) => setCases(d.reviewCases ?? [])).catch(() => {});
   }, []);
 
   async function save(patch: Partial<Profile>) {
@@ -70,6 +78,34 @@ export default function AccountPage() {
       </div>
 
       {saved ? <p className="text-xs text-tf-green-dark">Saved.</p> : null}
+
+      <div className="flex flex-col gap-3 rounded-tf-lg border border-tf-divider bg-tf-surface p-4">
+        <div>
+          <h2 className="font-semibold">Expert tickets</h2>
+          <p className="mt-0.5 text-sm text-tf-gray">
+            Cases raised for a tax expert. No invoice, number, or PDF is created for these.
+          </p>
+        </div>
+        {cases.length === 0 ? (
+          <p className="text-sm text-tf-gray">
+            No expert tickets yet. <Link href="/assistant" className="text-tf-green-dark underline">Ask the assistant.</Link>
+          </p>
+        ) : (
+          <>
+            <ul className="flex flex-col gap-3">
+              {cases.slice(0, TICKET_PREVIEW).map((c) => (
+                <ReviewCaseCard key={c.id} reviewCase={c} />
+              ))}
+            </ul>
+            {cases.length > TICKET_PREVIEW ? (
+              <Link href="/review" className="text-sm font-semibold text-tf-green-dark">
+                View all {cases.length} tickets →
+              </Link>
+            ) : null}
+          </>
+        )}
+      </div>
+
       <p className="text-xs text-tf-gray">Persistence: {mode === "local" ? "Local demo mode" : "Supabase"}</p>
     </div>
   );
