@@ -88,7 +88,6 @@ export function useInvoiceSkill(host: ChatHost): SkillBindings {
       });
       const data = await res.json();
       host.showCard("escalated", { reviewCaseId: data.reviewCaseId ?? null });
-      host.showCard("signup", { variant: "expert" });
       host.say("Done — a Taxfix tax expert will take a look. You can track it under Review cases.");
       setFocusField(null);
       host.finishFlow(`Escalated: ${c.customerName} (${c.countryCode}) — ${reason}`);
@@ -262,7 +261,6 @@ export function useInvoiceSkill(host: ChatHost): SkillBindings {
         }
       } else {
         host.showCard("blocked", { decision, citations: data.citations, reviewCaseId: data.reviewCaseId });
-        host.showCard("signup", { variant: "expert" });
         setStep("decided");
         host.finishFlow(context);
       }
@@ -295,7 +293,7 @@ export function useInvoiceSkill(host: ChatHost): SkillBindings {
         return;
       }
       host.showCard("invoiceReady", { id: data.invoice.id, invoiceNumber: data.invoice.invoiceNumber, status: data.invoice.status });
-      host.showCard("signup", { variant: "save" });
+      host.showCard("signup", {});
       host.say("All done! Your invoice is ready above.");
       host.finishFlow(`Invoice ${data.invoice.invoiceNumber} was issued for ${c.customerName}.`);
     } catch {

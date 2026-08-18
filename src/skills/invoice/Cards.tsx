@@ -169,23 +169,13 @@ export function VatStatusCard({
   );
 }
 
-const SIGNUP_COPY = {
-  save: {
-    title: "Save and send this invoice",
-    body: "Create a free Taxfix account to download it, send it, and skip the setup next time.",
-  },
-  expert: {
-    title: "Get this confirmed by an expert",
-    body: "Create a free Taxfix account and a Taxfix tax expert will review your case.",
-  },
-} as const;
-
-export function SignupCard({ variant }: { variant: keyof typeof SIGNUP_COPY }) {
-  const copy = SIGNUP_COPY[variant];
+export function SignupCard() {
   return (
     <div className={cardCls}>
-      <p className="text-sm font-bold text-tf-ink">{copy.title}</p>
-      <p className="mt-1 text-sm text-tf-gray">{copy.body}</p>
+      <p className="text-sm font-bold text-tf-ink">Save and send this invoice</p>
+      <p className="mt-1 text-sm text-tf-gray">
+        Create a free Taxfix account to download it, send it, and skip the setup next time.
+      </p>
       <div className="mt-3 flex justify-end">
         <Link
           href="/signup"
@@ -281,10 +271,10 @@ export function BlockedCard({ decision, citations, reviewCaseId }: { decision: D
         </p>
         {reviewCaseId ? (
           <Link
-            href={`/review?case=${reviewCaseId}`}
+            href="/signup"
             className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-tf-green-strong px-5 py-2.5 text-sm font-semibold text-white shadow-sm active:scale-95"
           >
-            Escalate to a tax expert →
+            Sign up for expert support →
           </Link>
         ) : null}
       </div>
